@@ -7,8 +7,12 @@ import (
 
 // Utility function that prints a formatted error message to stderr
 // and exits the program with exit code 1
-func exitOnError(err error) {
-	message := "Error: " + err.Error() + "\n"
+// 
+// Parameters:
+// 		messageContext (string): context of where this error is occurring
+func exitOnError(messageContext string, err error) {
+	messageFormat := "--------Error--------\n\tContext: %s\n\tError Message: %s"
+	message = fmt.Sprintf(messageFormat, messageContext, err.Error())
 	fmt.Fprintln(os.Stderr, message)
 	os.Exit(1)
 }
@@ -17,7 +21,7 @@ func exitOnError(err error) {
 func getMachineNames(machineNameFormat string, numMachines int) (string, []string) {
 	thisMachineName, err := os.Hostname()
 	if err != nil
-		utils.exitOnError(err)
+		utils.exitOnError("Retrieving HostName in utils.getMachineNames()", err)
 
 	machineNames = make([]string, 0)
 	
