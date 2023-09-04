@@ -6,51 +6,55 @@ import (
 	"os"
 )
 
-// DEPRECATED: realized we can just use panic() so might need this anymore
-// Utility function that prints a formatted error message to stderr
-// and exits the program with exit code 1
-//
-// Parameters:
-//
-//	messageContext (string): context of where this error is occurring
-func ExitOnError(messageContext string, err error) {
-	messageFormat := "--------Error--------\n\tContext: %s\n\tError Message: %s"
-	message := fmt.Sprintf(messageFormat, messageContext, err.Error())
-	fmt.Fprintln(os.Stderr, message)
-	os.Exit(1)
-}
-
-// Returns a tuple of the current machine's hostname and an array of all the machine names
-func GetMachineNames(machineNameFormat string, numMachines int) (string, []string) {
-	thisMachineName, err := os.Hostname()
+// Get the port that is assigned for this computer/server
+// Returns a string with a colon preceding the port number. Ex: ":8081"
+// Returns an empty string due to failure/error
+func GetLocalhostPort(machineNameFormat string, portFormat string, numMachines int) string {
+	thisMachineName, err := os.Hostname() // to make sure we don't add our hostname as the peer
 	if err != nil {
 		panic(err)
 	}
 
-	machineNames := make([]string, 0)
-
 	for i := 1; i <= numMachines; i++ {
-		newName := fmt.Sprintf(machineNameFormat, i)
-		if newName != thisMachineName {
-			machineNames = append(machineNames, newName)
+		machineName := fmt.Sprintf(machineNameFormat, i)
+		if machineName == thisMachineName {
+			port := fmt.Sprintf(portFormat, i)
+			return ":" + port
 		}
 	}
-
-	return thisMachineName, machineNames
+	return ""
 }
 
-// Given a slice of hostnames, it returns a slice of their corresponding
-// IP addresses
-func GetIPAddresses(hostnames []string) []string {
-	ret := make([]string, 0)
-	for _, hostname := range hostnames {
-		ipaddr, err := net.LookupIP(hostname)
+// Return a tuple where first value is the this machine's ip address concatenated with its
+// respective port that is assigned to it, and then second value of the tuple is a slice of
+// the ip addresses concatenated with their respective ports of all the peer servers
+func GetPeerServerAddresses(machineNameFormat string, portFormat string, numMachines int) []string {
+	thisMachineName, err := os.Hostname() // to make sure we don't add our hostname as the peer
+	if err != nil {
+		panic(err)
+	}
+
+	// addresses will be the peer's ip addresses w/ their respective port numbers
+	peerAddresses := make([]string, 0)
+	//var thisMachineAddress string
+
+	for i := 1; i <= numMachines; i++ {
+		peerHostName := fmt.Sprintf(machineNameFormat, i)
+		peerPort := fmt.Sprintf(portFormat, i)
+		peerIP, err := net.LookupIP(peerHostName)
+
 		if err != nil {
 			fmt.Printf("Failed to resolve IP addresses for %s: %v\n", hostname, err)
 			continue
 		}
-		ret = append(ret, ipaddr[0].String()) // ipaddr[0] = ipv4, ipaddr[1] = ipv6
+
+		if peerHostName != thisMachineName {
+			peerAddresses = append(peerAddresses, peerIP[0].String()+":"+peerPort)
+		}
+		//else {
+		//	thisMachineAddress = peerIP[0].String() + ":" + peerPort
+		//}
 	}
 
-	return ret
+	return peerAddresses
 }
