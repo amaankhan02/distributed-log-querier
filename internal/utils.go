@@ -1,9 +1,11 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 // Get the port that is assigned for this computer/server
@@ -57,4 +59,59 @@ func GetPeerServerAddresses(machineNameFormat string, portFormat string, numMach
 	}
 
 	return peerAddresses
+}
+
+// loop through and see if any of the command arguments start with quotoations " or ' & handle that
+func handleExtraQuotes(cmdArgs []string) []string {
+	var result []string
+	var currentString string
+
+	for _, cmd := range cmdArgs {
+
+		if strings.HasPrefix(cmd, `"`) && strings.HasSuffix(cmd, `"`) {
+
+			cmd = strings.Trim(cmd, `"`)
+			result = append(result, cmd)
+		} else {
+
+			if strings.HasPrefix(cmd, `"`) {
+				currentString = cmd
+			} else if strings.HasSuffix(cmd, `"`) {
+				currentString += " " + cmd
+				result = append(result, strings.Trim(currentString, `"`))
+				currentString = ""
+			} else if currentString != "" {
+				currentString += " " + cmd
+			} else {
+				result = append(result, cmd)
+			}
+		}
+	}
+
+	return result
+}
+
+func DisplayPrompt() {
+	fmt.Println("Enter grep command: ")
+	fmt.Print("$ ")
+}
+
+func GetUserInput() []string {
+	// get input from user
+	reader := bufio.NewReader(os.Stdin)
+	userInput, _ := reader.ReadString('\n')
+	userInput = strings.TrimSpace(userInput)
+
+	// split user input into command and arguments
+	cmdArgs := strings.Fields(userInput)
+
+	cmdArgs = handleExtraQuotes(cmdArgs)
+
+	// Make sure the user provided atleast two arguments
+	if len(cmdArgs) < 2 {
+		fmt.Println("Invalid input. Please provide a valid grep command.")
+		return nil
+	}
+
+	return cmdArgs
 }
