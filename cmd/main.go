@@ -2,6 +2,7 @@ package main
 
 import (
 	"cs425_mp1/internal"
+	"cs425_mp1/internal/grep"
 	"fmt"
 	"log"
 	"net"
@@ -12,6 +13,15 @@ const (
 	NUM_MACHINES        = 10
 	PORT_FORMAT         = "80%02d" // 8001, 8002, ... 8010 - based on the
 )
+
+// Constructs and returns a socket request message for sending a grep query
+func createQueryRequest(query string) {
+
+}
+
+func createOutputRequest(filename string, outputData string) {
+
+}
 
 // Create socket endpoint on the port passed in, and listen to any connections
 // For every new accepted TCP connection, call a new goroutine to handle the
@@ -80,14 +90,21 @@ func main() {
 	serverPort := internal.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
 
 	go initializeServer(serverPort) // create server and listen to connections & accept them
+
+	// TODO: maybe initialize clients once all the computer's servers are booted up
 	peerConns := initializeClients(peerServerAddresses)
 
 	// Enter infinite loop and display prompts to user, while getting the query
 	for {
-		internal.DisplayPrompt()
-		grepQueryArgs := internal.GetUserInput()
+		internal.DisplayGrepPrompt()
+		userInput := internal.ReadUserInput()
 
-		// Serialize and send these query to all peers
+		gq, err := grep.CreateGrepQueryFromInput(userInput)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
+
 		// Also execute the grep query locally
 		// and then wait to receive back the outputs from all the peers
 		// parse the outputs received from all peers and display to user
