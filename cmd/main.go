@@ -1,95 +1,96 @@
 package main
 
 import (
-	"cs425_mp1/internal" // adding "_" prevents having to write "internal." before each method call
+	"cs425_mp1/internal"
 	"fmt"
+	"log"
 	"net"
-	"sync"
 )
 
 const (
 	MACHINE_NAME_FORMAT = "fa23-cs425-19%02d.cs.illinois.edu"
 	NUM_MACHINES        = 10
-	PORT                = "8080"
+	PORT_FORMAT         = "80%02d" // 8001, 8002, ... 8010 - based on the
 )
 
-func main() {
-	_, peerMachines := internal.GetMachineNames(MACHINE_NAME_FORMAT, NUM_MACHINES)
-	ipAddresses := internal.GetIPAddresses(peerMachines)
-
-	// used to wait for all incoming connections to finish
-	var wg sync.WaitGroup // WaitGroup similar to using pthread_join (later though - this just initializes)
-
-	for i, ipAddr := range ipAddresses {
-		// Create TCP Listener for each IP address
-		listener, err := net.Listen("tcp", ipAddr+":"+PORT) // TODO: check if this is right...
-		if err != nil {
-			fmt.Printf("Error creating listener for %s (Host: %s): %v\n", ipAddr, peerMachines[i], err)
-			continue // skip this and just connect to the others
-		}
-
-		defer listener.Close()
-
-		fmt.Printf("Server is listening on %s:%s\n", ipAddr, PORT)
-
-		for {
-			// Accept incoming connections
-			conn, err := listener.Accept()
-			if err != nil {
-				fmt.Println("Error accepting connection: ", err)
-				continue
-			}
-
-			// Handle the connection in a separate goroutine
-			wg.Add(1)
-			go func() {
-				defer wg.Done() // decrements by 1 after this func finishes
-				handleConnection(conn)
-			}()
-
-		}
+// Create socket endpoint on the port passed in, and listen to any connections
+// For every new accepted TCP connection, call a new goroutine to handle the
+// connection --> which should end up doing an infinite loop as long as the connection
+// is up and it should wait for any messages being received on that connection, process,
+// send back the output, and then repeat
+// TODO: change name from initializeServer() to something else b/c its not just initializing it's also
+// TODO: ^ accepting new connections
+func initializeServer(port string) {
+	listen, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("net.Listen(): %v", err)
 	}
+	defer func(listen net.Listener) {
+		err := listen.Close()
+		if err != nil {
+			log.Fatalf("listen.Close(): %v", err)
+		}
+	}(listen)
 
-	// Wait for all connections to finish - similar to pthread_join()
-	wg.Wait()
+	// Listen for connections, accept, and spawn goroutine to handle that connection
+	for {
+		conn, err := listen.Accept()
+		if err != nil {
+			log.Fatalf("listen.Accept(): %v", err)
+		}
 
+		// TODO: do i need to defer conn.Close()? and do i need to use any waitGroups...?
+		fmt.Println("Connected to: ", conn.RemoteAddr())
+		go handleServerConnection(conn)
+	}
 }
 
-func handleConnection(conn net.Conn) {
-	// Handle the incoming connection here.
-	// Read data from the peer and send responses as needed
-	defer func(conn net.Conn) {
-		err := conn.Close()
+// Handler for a connection that the server establishes with a foreign client
+func handleServerConnection(clientConn net.Conn) {
+	// keep looping through waiting for data to be received
+	// read incoming data (grep query)
+	// process and execute query
+	// send back the output
+}
+
+// Initialize all clients by connecting to all the remote servers (peers) and return
+// a slice of the connection objects to all the servers/peers
+func initializeClients(peerAddresses []string) []net.Conn {
+	peerConns := make([]net.Conn, 0) // connection objects of all the connected servers (peers)
+
+	// connect to each server's ipAddress (acting as client - connecting to the servers)
+	for _, peerServerAddr := range peerAddresses {
+		conn, err := net.Dial("tcp", peerServerAddr) // conn = client connection object
 		if err != nil {
-			panic(err)
+			fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
+			continue
 		}
-	}(conn)
+		defer conn.Close()
 
-	// Example: Read data from the peer
-	buffer := make([]byte, 1024)
-
-	/*
-		https://stackoverflow.com/a/27003111/7359915
-			> NOTE: conn.Read() is non-blocking
-			> To read a specific number of bytes, use io.ReadAtLeast or io.ReadFull
-			> Or to read until some arbitrary condition is met, you should loop on the Read()
-			  as long as there is no error (but error out on too-large inputs to prevent eating server resources)
-			> If implementing a TEXT-Based protocol, consider net/textproto which puts bufio.Reader()
-				in front of the connection, so you can read lines
-	*/
-	n, err := conn.Read(buffer)
-	if err != nil {
-		fmt.Println("Error reading from connection: ", err)
-		return
+		// probably need to call a goroutine to handle this client
+		// for now, keep a record of all the client connections in a slice
+		peerConns = append(peerConns, conn)
 	}
 
-	receivedData := buffer[:n]
-	fmt.Printf("Received data from peer: %s\n", receivedData)
+	return peerConns
+}
 
-	// Example: Send a response back to the peer
-	response := []byte("Hello from the server")
-	_, err = conn.Write(response)
-	if err != nil {
-		fmt.Println("Error sending response: ", err)
+func main() {
+	peerServerAddresses := internal.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
+	serverPort := internal.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
+
+	go initializeServer(serverPort) // create server and listen to connections & accept them
+	peerConns := initializeClients(peerServerAddresses)
+
+	// Enter infinite loop and display prompts to user, while getting the query
+	for {
+		internal.DisplayPrompt()
+		grepQueryArgs := internal.GetUserInput()
+
+		// Serialize and send these query to all peers
+		// Also execute the grep query locally
+		// and then wait to receive back the outputs from all the peers
+		// parse the outputs received from all peers and display to user
 	}
+
 }
