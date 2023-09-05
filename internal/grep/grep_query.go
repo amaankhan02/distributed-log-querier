@@ -13,6 +13,10 @@ import (
 type GrepQuery struct {
 	cmdArgs        []string // slice of the command line arguments (w/o the filename)
 	packagedString string   // command args as one string concatenated by "-" b/w each arg
+	// TODO: ^ may not be able to use that as a key for cache - b/c of caps differences
+	// or you can make the key the serialized version of GrepQuery object? in that case, we don't even need
+	// the packagedString field, its redundant
+	// In that case, change this from a struct to "type GrepQuery []string" since its just the cmdArgs
 }
 
 func CreateGrepQueryFromInput(rawUserInput string) (GrepQuery, error) {

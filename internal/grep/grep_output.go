@@ -3,13 +3,31 @@ package grep
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 )
 
 // TODO: should any of these fields be pointers?
 type GrepOutput struct {
+	// variable names starting with lowercase indicates it's private access
 	output   string
 	filename string
 	numLines int
+}
+
+// Getter for numLines attribute
+func (g GrepOutput) NumLines() int {
+	return g.numLines
+}
+
+// Getter for filename attribute
+func (g GrepOutput) Filename() string {
+	return g.filename
+}
+
+// Formats the contents of the GrepOutput as a string
+func (g GrepOutput) ToString() string {
+	strFormat := "Filename: %s\nNumber of Lines: %d\nOutput:%s\n"
+	return fmt.Sprintf(strFormat, g.filename, g.numLines, g.output)
 }
 
 // SerializeGrepOutput Serialize GrepOutput object into a byte array
