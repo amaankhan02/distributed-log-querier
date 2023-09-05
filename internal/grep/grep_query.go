@@ -1,6 +1,8 @@
 package grep
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -36,6 +38,30 @@ func CreateGrepQueryFromPackagedString(packagedString string) GrepQuery {
 	g.cmdArgs = strings.Split(packagedString, "-")
 	g.packagedString = packagedString
 	return g
+}
+
+func SerializeGrepQuery(gquery GrepQuery) []byte {
+	binary_buff := new(bytes.Buffer)
+
+	encoder := gob.NewEncoder(binary_buff)
+	err := encoder.Encode(gquery)
+	if err != nil {
+		return nil
+	}
+	return binary_buff.Bytes()
+}
+
+func DeserializeGrepQuery(data []byte) *GrepQuery {
+	gquery := new(GrepQuery)
+	byteBuffer := bytes.NewBuffer(data)
+	decoder := gob.NewDecoder(byteBuffer)
+
+	err := decoder.Decode(gquery)
+	if err != nil {
+		return nil
+	}
+
+	return gquery
 }
 
 // Executes the grep query on the file provided, and returns a GrepOutput object

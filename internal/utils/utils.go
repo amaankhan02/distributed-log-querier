@@ -69,3 +69,7 @@ func DisplayGrepPrompt() {
 	fmt.Println("Enter grep command: ")
 	fmt.Print("$ ")
 }
+
+func GetLocalLogFile() string {
+	panic("Not implemented!")
+}

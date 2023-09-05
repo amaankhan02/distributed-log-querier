@@ -2,6 +2,7 @@ package main
 
 import (
 	"cs425_mp1/internal/grep"
+	"cs425_mp1/internal/network"
 	"cs425_mp1/internal/utils"
 	"fmt"
 	"log"
@@ -9,20 +10,20 @@ import (
 	"sync"
 )
 
+/**
+TODO: QUESTIONS!!
+	* is there a possiblity that the file size may not fit in memory... cuz then i can't keep
+	  a GrepOutput object in memory... since it holds the entire output in memory...
+	* in my socket message requests, i put the [size] as a 4-Byte number, which can represent up to ~4GB file size.
+		is this enough? Or should I use 8-Byte number to represent the size instead?
+	* is conn.Write() a bufferred write or do i need to create a loop like in c to send all of it
+*/
+
 const (
 	MACHINE_NAME_FORMAT = "fa23-cs425-19%02d.cs.illinois.edu"
 	NUM_MACHINES        = 10       // num of total machines in the network, although you should be able to use less
 	PORT_FORMAT         = "80%02d" // 8001, 8002, ... 8010 - based on the
 )
-
-// Constructs and returns a socket request message for sending a grep query
-func createQueryRequest(query string) {
-
-}
-
-func createOutputRequest(filename string, outputData string) {
-
-}
 
 // Create socket endpoint on the port passed in, and listen to any connections
 // For every new accepted TCP connection, call a new goroutine to handle the
@@ -152,11 +153,19 @@ Parameters:
 	outputChannel: channel that remoteExecute() will send its grep output to
 */
 func remoteExecute(gquery grep.GrepQuery, conn net.Conn, outputChannel chan grep.GrepOutput) {
+	gquery_data := grep.SerializeGrepQuery(gquery)
+	err := network.SendRequest(gquery_data, conn)
+	if err != nil {
+		log.Fatalf("Failed to send gquery_data to %s", conn.RemoteAddr())
+		return
+	}
+
+	// wait to recv data back
 
 }
 
 func localExecute(gquery grep.GrepQuery, outputChannel chan grep.GrepOutput) {
-
+	grepOutput := gquery.Execute(utils.GetLocalLogFile())
 }
 
 func main() {
