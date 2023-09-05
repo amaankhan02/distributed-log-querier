@@ -45,7 +45,7 @@ func GetPeerServerAddresses(machineNameFormat string, portFormat string, numMach
 		peerIP, err := net.LookupIP(peerHostName)
 
 		if err != nil {
-			fmt.Printf("Failed to resolve IP addresses for %s: %v\n", hostname, err)
+			fmt.Printf("Failed to resolve IP addresses for %s: %v\n", thisMachineName, err)
 			continue
 		}
 
