@@ -21,6 +21,8 @@ type GrepQuery struct {
 	// In that case, change this from a struct to "type GrepQuery []string" since its just the cmdArgs
 }
 
+//type GrepQuery []string
+
 func CreateGrepQueryFromInput(rawUserInput string) (GrepQuery, error) {
 	g := GrepQuery{}
 	query, err := parseRawGrepQuery(rawUserInput)

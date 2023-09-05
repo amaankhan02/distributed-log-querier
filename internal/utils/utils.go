@@ -73,3 +73,17 @@ func DisplayGrepPrompt() {
 func GetLocalLogFile() string {
 	panic("Not implemented!")
 }
+
+// Prompts user to wait by displaying the "message" to stdout, and waits for user
+// to type in "r" for continue. Anything else will simply display the prompt again
+func PromptWait(message string) {
+	fmt.Println(message)
+
+	for {
+		fmt.Println("Type [r] when you are ready to continue (w/o brackets)")
+		input := ReadUserInput()
+		if input == "r" {
+			break
+		}
+	}
+}
