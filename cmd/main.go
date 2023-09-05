@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 )
 
 const (
 	MACHINE_NAME_FORMAT = "fa23-cs425-19%02d.cs.illinois.edu"
-	NUM_MACHINES        = 10
+	NUM_MACHINES        = 10       // num of total machines in the network, although you should be able to use less
 	PORT_FORMAT         = "80%02d" // 8001, 8002, ... 8010 - based on the
 )
 
@@ -85,6 +86,79 @@ func initializeClients(peerAddresses []string) []net.Conn {
 	return peerConns
 }
 
+/*
+Execute the grep query on local machine and all peer machines by sending grep query
+to all peer machines and receive back output from them
+
+Prints the output from each machine to stdout in a nice formatted manner
+Additionally prints the total number of lines at the end
+*/
+func distributedExecute(gquery grep.GrepQuery, peerConnections []net.Conn) {
+	// TODO: change all NUM_MACHINES to be just the active connected machine not NUM_MACHINES since we don't know how many are connected
+
+	peerChannels := make([]chan grep.GrepOutput, NUM_MACHINES-1)
+	localChannel := make(chan grep.GrepOutput)
+	var wg sync.WaitGroup
+	var totalNumLines int
+
+	for i := 0; i < NUM_MACHINES-1; i++ {
+		peerChannels[i] = make(chan grep.GrepOutput)
+	}
+
+	// launch remote executions
+	for i := 0; i < NUM_MACHINES-1; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			remoteExecute(gquery, peerConnections[idx], peerChannels[idx])
+		}(i) // pass in i so that it accesses the correct values from peerConnections & channels since i will change
+	}
+
+	// launch goroutine for local execution
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		localExecute(gquery, localChannel)
+	}()
+
+	// wait for all goroutines to finish  (similar to pthread_join)
+	wg.Wait()
+
+	// Print local grep output to stdout
+	grepOut := <-localChannel
+	totalNumLines += grepOut.NumLines()
+	fmt.Println(grepOut.ToString())
+
+	// Print peer grep outputs to stdout
+	for i := 0; i < len(peerChannels); i++ {
+		grepOut := <-peerChannels[i] // read from channel into grep outputs array
+		totalNumLines += grepOut.NumLines()
+		fmt.Println(grepOut.ToString())
+	}
+
+	fmt.Printf("Total Number of Lines: %d\n", totalNumLines)
+}
+
+/*
+Execute a grep query on a remote machine by sending the query to the machine
+and waiting to receive the output and then returning it.
+
+Designed to be ran as a goroutine.
+
+Parameters:
+
+	gquery: query to execute
+	conn: net.Conn client object to the remote machine
+	outputChannel: channel that remoteExecute() will send its grep output to
+*/
+func remoteExecute(gquery grep.GrepQuery, conn net.Conn, outputChannel chan grep.GrepOutput) {
+
+}
+
+func localExecute(gquery grep.GrepQuery, outputChannel chan grep.GrepOutput) {
+
+}
+
 func main() {
 	peerServerAddresses := internal.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
 	serverPort := internal.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
@@ -105,9 +179,7 @@ func main() {
 			continue
 		}
 
-		// Also execute the grep query locally
-		// and then wait to receive back the outputs from all the peers
-		// parse the outputs received from all peers and display to user
+		distributedExecute(gq, peerConns)
 	}
 
 }
