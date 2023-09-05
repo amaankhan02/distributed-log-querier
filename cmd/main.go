@@ -1,8 +1,8 @@
 package main
 
 import (
+	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
-	"cs425_mp1/internal/grep_engine"
 	"cs425_mp1/internal/utils"
 	"fmt"
 )
@@ -26,7 +26,7 @@ func main() {
 	peerServerAddresses := utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
 	serverPort := utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
 	localLogFile := utils.GetLocalLogFile()
-	engine := grep_engine.CreateEngine(localLogFile, serverPort, peerServerAddresses)
+	engine := distributed_engine.CreateEngine(localLogFile, serverPort, peerServerAddresses)
 
 	fmt.Println("Setting up server. Listening to new connections...")
 	engine.InitializeServer()

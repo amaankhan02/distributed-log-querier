@@ -1,4 +1,4 @@
-package grep_engine
+package distributed_engine
 
 import (
 	"cs425_mp1/internal/grep"
@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-// DistributedEngine: Struct defining the grep_engine to handle the Distributed Grep execution across
+// DistributedEngine: Struct defining the distributed_engine to handle the Distributed Grep execution across
 // multiple peer machines.
 // Contains a server and client where the server accepts connections from all peer machines, and
 // the Client is connected to all peer machines. During the execution of a grep query,
