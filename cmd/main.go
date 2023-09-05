@@ -77,7 +77,7 @@ func initializeClients(peerAddresses []string) []net.Conn {
 			fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
 			continue
 		}
-		defer conn.Close()
+		defer conn.Close() // TODO: wrap error handling in a closure
 
 		// probably need to call a goroutine to handle this client
 		// for now, keep a record of all the client connections in a slice
@@ -97,13 +97,13 @@ Additionally prints the total number of lines at the end
 func distributedExecute(gquery grep.GrepQuery, peerConnections []net.Conn) {
 	// TODO: change all NUM_MACHINES to be just the active connected machine not NUM_MACHINES since we don't know how many are connected
 
-	peerChannels := make([]chan grep.GrepOutput, NUM_MACHINES-1)
-	localChannel := make(chan grep.GrepOutput)
+	peerChannels := make([]chan *grep.GrepOutput, NUM_MACHINES-1)
+	localChannel := make(chan *grep.GrepOutput)
 	var wg sync.WaitGroup
 	var totalNumLines int
 
 	for i := 0; i < NUM_MACHINES-1; i++ {
-		peerChannels[i] = make(chan grep.GrepOutput)
+		peerChannels[i] = make(chan *grep.GrepOutput)
 	}
 
 	// launch remote executions
@@ -152,20 +152,28 @@ Parameters:
 	conn: net.Conn client object to the remote machine
 	outputChannel: channel that remoteExecute() will send its grep output to
 */
-func remoteExecute(gquery grep.GrepQuery, conn net.Conn, outputChannel chan grep.GrepOutput) {
+func remoteExecute(gquery grep.GrepQuery, conn net.Conn, outputChannel chan *grep.GrepOutput) {
 	gquery_data := grep.SerializeGrepQuery(gquery)
 	err := network.SendRequest(gquery_data, conn)
 	if err != nil {
-		log.Fatalf("Failed to send gquery_data to %s", conn.RemoteAddr())
+		fmt.Printf("Failed to send gquery_data to %s", conn.RemoteAddr()) // TODO: how to handle this error?!
 		return
 	}
 
 	// wait to recv data back
+	byte_data, err2 := network.ReadRequest(conn)
+	if err2 != nil {
+		fmt.Printf("Failed to read gquery_data from %s", conn.RemoteAddr()) // TODO: how to handle this error?!
+		return
+	}
 
+	var grepOutput = grep.DeserializeGrepOutput(byte_data)
+	outputChannel <- grepOutput
 }
 
-func localExecute(gquery grep.GrepQuery, outputChannel chan grep.GrepOutput) {
+func localExecute(gquery grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := gquery.Execute(utils.GetLocalLogFile())
+	outputChannel <- &grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
 }
 
 func main() {
