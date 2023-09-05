@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cs425_mp1/internal"
 	"cs425_mp1/internal/grep"
+	"cs425_mp1/internal/utils"
 	"fmt"
 	"log"
 	"net"
@@ -160,8 +160,8 @@ func localExecute(gquery grep.GrepQuery, outputChannel chan grep.GrepOutput) {
 }
 
 func main() {
-	peerServerAddresses := internal.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
-	serverPort := internal.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
+	peerServerAddresses := utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
+	serverPort := utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
 
 	go initializeServer(serverPort) // create server and listen to connections & accept them
 
@@ -170,8 +170,8 @@ func main() {
 
 	// Enter infinite loop and display prompts to user, while getting the query
 	for {
-		internal.DisplayGrepPrompt()
-		userInput := internal.ReadUserInput()
+		utils.DisplayGrepPrompt()
+		userInput := utils.ReadUserInput()
 
 		gq, err := grep.CreateGrepQueryFromInput(userInput)
 		if err != nil {
