@@ -24,6 +24,11 @@ func (g GrepOutput) Filename() string {
 	return g.filename
 }
 
+// Getter for output attribute
+func (g GrepOutput) Output() string {
+	return g.output
+}
+
 // Formats the contents of the GrepOutput as a string
 func (g GrepOutput) ToString() string {
 	strFormat := "Filename: %s\nNumber of Lines: %d\nOutput:%s\n"
