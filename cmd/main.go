@@ -42,6 +42,6 @@ func main() {
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
-		engine.DistributedExecute(grepQuery)
+		engine.Execute(grepQuery)
 	}
 }

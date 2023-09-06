@@ -107,7 +107,7 @@ to all peer machines and receive back output from them
 Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
-func (dpe DistributedGrepEngine) DistributedExecute(gquery grep.GrepQuery) {
+func (dpe DistributedGrepEngine) Execute(gquery grep.GrepQuery) {
 	// TODO: change all NUM_MACHINES to be just the active connected machine not NUM_MACHINES since we don't know how many are connected
 	numPeerConnections := len(dpe.clientConns)
 	peerChannels := make([]chan *grep.GrepOutput, numPeerConnections)

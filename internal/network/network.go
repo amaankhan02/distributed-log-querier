@@ -36,14 +36,14 @@ and returns it. Caller is expected to deserialize this []byte of data as this fu
 do that.
 */
 func ReadRequest(conn net.Conn) ([]byte, error) {
-
+	return nil, nil
 }
 
 /*
 Helper function to read just the message size from the connection
 */
 func readMessageSize(conn net.Conn) error {
-
+	return nil
 }
 
 /*
