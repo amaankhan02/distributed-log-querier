@@ -37,6 +37,10 @@ func main() {
 		utils.DisplayGrepPrompt()
 		rawInput := utils.ReadUserInput()
 
+		if rawInput == "exit" {
+			engine.Exit()
+		}
+
 		grepQuery, err := grep.CreateGrepQueryFromInput(rawInput)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 )
 
@@ -93,11 +94,21 @@ func (dpe DistributedGrepEngine) initServer() {
 }
 
 // Handler for a connection that the server establishes with a foreign client
-func handleServerConnection(conn net.Conn) {
-	// keep looping through waiting for data to be received
-	// read incoming data as bytes and deserialize into a grep query object
-	// process and execute query -> get a GrepOutput object
-	// serialize the GrepOutput object and send back the output
+func (dpe DistributedGrepEngine) handleServerConnection(conn net.Conn) {
+
+	for {
+		// TODO: make sure ReadRequest() blocks
+		gQueryData, _ := network.ReadRequest(conn)
+		var gQuery *grep.GrepQuery = grep.DeserializeGrepQuery(gQueryData)
+		gOut := gQuery.Execute(dpe.localLogFile)
+		gOutData := grep.SerializeGrepOutput(gOut)
+		err := network.SendRequest(gOutData, conn)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
+			continue
+		}
+	}
+	// TODO: how do i exit this function? Should probably have an exit feature in my program...
 }
 
 /*
@@ -187,4 +198,11 @@ func (dpe DistributedGrepEngine) remoteExecute(gquery grep.GrepQuery, conn net.C
 func (dpe DistributedGrepEngine) localExecute(gquery grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := gquery.Execute(dpe.localLogFile)
 	outputChannel <- &grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
+}
+
+/*
+TODO: change to better name
+*/
+func (dpe DistributedGrepEngine) Exit() {
+	panic("Not implemented")
 }
