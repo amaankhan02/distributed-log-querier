@@ -1,0 +1,14 @@
+This is a sample text file for testing the grep command in Go.
+You can search for specific word or phrases in this file.
+Keyword is it.
+Feel free to add your own text to experiment with different searches.
+
+This is another line of text that contains the word 'GoLang'.
+This is whatttt
+The word grep is also mentioned in this line.
+This is one of many many file.
+fo
+.8 Wow
+.90907
+crazy
+7CRAZY
