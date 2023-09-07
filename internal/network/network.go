@@ -2,6 +2,7 @@ package network
 
 import (
 	"encoding/binary"
+	"errors"
 	"net"
 )
 
@@ -36,14 +37,38 @@ and returns it. Caller is expected to deserialize this []byte of data as this fu
 do that.
 */
 func ReadRequest(conn net.Conn) ([]byte, error) {
-	return nil, nil
+	size, err1 := readMessageSize(conn, MESSAGE_SIZE_BYTES)
+	if err1 != nil {
+		return nil, err
+	}
+	buff := make([]byte, size)
+
+	_, err := conn.Read(buff)
+	if err != nil {
+		return nil, err
+	}
+	return buff, nil
 }
 
 /*
 Helper function to read just the message size from the connection
 */
-func readMessageSize(conn net.Conn) error {
-	return nil
+func readMessageSize(conn net.Conn, messageSizeBytes int) (int, error) {
+	if messageSizeBytes != 4 && messageSizeBytes != 8 {
+		return 0, errors.New("Invalid argument for messageSizeBytes - must be either equal to 4 or 8")
+	}
+
+	buff := make([]byte, messageSizeBytes)
+	_, err := conn.Read(buff)
+	if err != nil {
+		return 0, err
+	}
+
+	if messageSizeBytes == 4 {
+		return int(binary.LittleEndian.Uint32(buff)), nil
+	} else {
+		return int(binary.LittleEndian.Uint64(buff)), nil
+	}
 }
 
 /*
