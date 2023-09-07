@@ -21,3 +21,6 @@ go.work
 
 # Python
 venv/
+
+main
+*.log
