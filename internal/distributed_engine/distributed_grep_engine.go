@@ -53,10 +53,8 @@ func (dpe DistributedGrepEngine) ConnectToPeers() {
 			fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
 			continue
 		}
-		defer conn.Close() // TODO: wrap error handling in a closure
+		//defer conn.Close() 	// --> don't want to close the connection here itself... do it at shutdown
 
-		// probably need to call a goroutine to handle this client
-		// for now, keep a record of all the client connections in a slice
 		dpe.clientConns = append(dpe.clientConns, conn)
 	}
 }
@@ -205,4 +203,9 @@ func (dpe DistributedGrepEngine) localExecute(gquery grep.GrepQuery, outputChann
 
 func (dpe DistributedGrepEngine) Shutdown() {
 	panic("Not implemented")
+	/*
+		TODO:
+			* close all peer client connections
+			* close server connections (or is that already handled)
+	*/
 }
