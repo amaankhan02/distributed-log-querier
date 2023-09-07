@@ -39,7 +39,7 @@ do that.
 func ReadRequest(conn net.Conn) ([]byte, error) {
 	size, err1 := readMessageSize(conn, MESSAGE_SIZE_BYTES)
 	if err1 != nil {
-		return nil, err
+		return nil, err1
 	}
 	buff := make([]byte, size)
 
