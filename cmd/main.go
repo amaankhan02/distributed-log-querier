@@ -4,6 +4,7 @@ import (
 	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/utils"
+	"flag"
 	"fmt"
 	"io"
 )
@@ -19,13 +20,23 @@ TODO: QUESTIONS!!
 
 const (
 	MACHINE_NAME_FORMAT = "fa23-cs425-19%02d.cs.illinois.edu"
-	NUM_MACHINES        = 10       // num of total machines in the network, although you should be able to use less
-	PORT_FORMAT         = "80%02d" // 8001, 8002, ... 8010 - based on the
+	//NUM_MACHINES        = 2        // num of total machines in the network, although you should be able to use less
+	PORT_FORMAT = "80%02d" // 8001, 8002, ... 8010 - based on the
 )
 
+var flagNumMachines *int
+
+func ParseArguments() {
+	flagNumMachines = flag.Int("m", 10, "Number of Machines in the network in the range [2, 10]")
+	flag.Parse()
+}
+
 func main() {
-	peerServerAddresses := utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
-	serverPort := utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, NUM_MACHINES)
+	ParseArguments()
+
+	fmt.Printf("Num machines: %d\n", *flagNumMachines)
+	peerServerAddresses := utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
+	serverPort := utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
 	localLogFile := utils.GetLocalLogFile()
 	engine := distributed_engine.CreateEngine(localLogFile, serverPort, peerServerAddresses)
 
