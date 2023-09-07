@@ -5,7 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"os/exec"d
+	"os/exec"
 	"strings"
 )
 
@@ -94,6 +94,8 @@ func parseRawGrepQuery(userInput string) ([]string, error) {
 	// Make sure the user provided atleast two arguments
 	if len(cmdArgs) < 2 {
 		return nil, errors.New("Invalid input! Length of command arguments too small or invalid")
+	} else if cmdArgs[0] != "grep" {
+		return nil, errors.New("Invalid command! Must be a grep command w/o putting the filename")
 	}
 
 	return cmdArgs, nil
