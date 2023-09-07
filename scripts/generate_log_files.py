@@ -135,9 +135,9 @@ def generate_log_file(file, num_lines, log_with_time, known_lines, i):
     # creates log file that logs DEBUG, INFO, WARNING, or ERROR (level = lowest possible level, setting it to debug means it logs all levels)
     # if file is already created it adds to the log file
     if log_with_time:
-        logging.basicConfig(filename= file, level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s %(name)s')
+        logging.basicConfig(filename= file, level=logging.DEBUG, format='%(asctime)s %(levelname)s: %(message)s')
     else:
-        logging.basicConfig(filename= file, level=logging.DEBUG, format='%(levelname)s: %(message)s %(name)s')
+        logging.basicConfig(filename= file, level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
     add_random_lines(num_lines, logger)
     add_known_lines(known_lines, logger)
@@ -168,6 +168,7 @@ def add_random_lines(num_lines, logger):
 
 def add_known_lines(known_lines, logger):
 
+
     for (log_level, log_message) in known_lines:
         
         if log_level == logging.INFO:
@@ -183,24 +184,23 @@ def add_known_lines(known_lines, logger):
 
 def main():
 
-    files = ['test_log_file1.log', 'test_log_file2.log', 'test_log_file3.log']
-    file_lines = [100, 56, 456]
-    known_lines = [[(logging.info, "User logged in"),
-                    (logging.error, "Server responded with HTTP error code: 404"), 
-                    (logging.warning, "Disk space running low, clear some space"),
-                    (logging.critical, "Critical system failure: Application halted")],
+    files = ['test_log_file4.log', 'test_log_file5.log', 'test_log_file6.log']
+    file_lines = [15, 28, 36]
+    known_lines = [[(logging.ERROR, "File not found: 'file.txt'"),
+                    (logging.DEBUG, "Debug message: Processing step 3"),
+                    (logging.INFO, "Scheduled maintenance task started"),
+                    (logging.INFO, "Received 200 OK response from API endpoint"),
+                    (logging.CRITICAL, "Application halted: fatal error")],
 
-                   [(logging.info, "Email sent to 'user@example.com'",), 
-                    (logging.info,  "Disk space usage: 80 percent used")],
+                   [(logging.INFO, "Email sent to 'user@example.com'",), 
+                    (logging.INFO,  "Disk space usage: 80 percent used")],
 
-                   [(logging.error, "File not found: 'file.txt'"),
-                    (logging.debug, "Debug message: Processing step 3"),
-                    (logging.info, "Scheduled maintenance task started"),
-                    (logging.info, "Received 200 OK response from API endpoint"),
-                    (logging.critical, "Application halted: fatal error")]]
-    
+                    [(logging.INFO, "User logged in"),
+                    (logging.ERROR, "Server responded with HTTP error code: 404"), 
+                    (logging.WARNING, "Disk space running low, clear some space"),
+                    (logging.CRITICAL, "Critical system failure: Application halted")]]
+
     with_time = [False, True, True]
-
 
     for i in range(len(files)):
         generate_log_file(files[i], file_lines[i], with_time[i], known_lines[i], i)
