@@ -58,11 +58,14 @@ func GetPeerServerAddresses(machineNameFormat string, portFormat string, numMach
 }
 
 // Reads from stdin and trims any additional whitespace on sides and returns as a string
-func ReadUserInput() string {
+func ReadUserInput() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
-	userInput, _ := reader.ReadString('\n')
+	userInput, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
 	userInput = strings.TrimSpace(userInput)
-	return userInput
+	return userInput, nil
 }
 
 func DisplayGrepPrompt() {
@@ -81,7 +84,7 @@ func PromptWait(message string) {
 
 	for {
 		fmt.Println("Type [r] when you are ready to continue (w/o brackets)")
-		input := ReadUserInput()
+		input, _ := ReadUserInput()
 		if input == "r" {
 			break
 		}

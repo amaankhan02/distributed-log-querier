@@ -24,6 +24,7 @@ type DistributedGrepEngine struct {
 	serverPort    string
 	peerAddresses []string
 	localLogFile  string
+	isRunning     bool
 }
 
 /*
@@ -35,6 +36,7 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 	dpe.localLogFile = localLogFile
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
+	dpe.isRunning = false
 	return dpe
 }
 
@@ -51,16 +53,15 @@ func (dpe DistributedGrepEngine) ConnectToPeers() {
 			fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
 			continue
 		}
-		defer conn.Close() // TODO: wrap error handling in a closure
+		//defer conn.Close() 	// --> don't want to close the connection here itself... do it at shutdown
 
-		// probably need to call a goroutine to handle this client
-		// for now, keep a record of all the client connections in a slice
 		dpe.clientConns = append(dpe.clientConns, conn)
 	}
 }
 
 // Initialize Server on a separate goroutine and engine now actively listens to new connections
 func (dpe DistributedGrepEngine) InitializeServer() {
+	dpe.isRunning = true
 	go dpe.initServer()
 }
 
@@ -89,14 +90,14 @@ func (dpe DistributedGrepEngine) initServer() {
 		// TODO: do i need to defer conn.Close()? and do i need to use any waitGroups...?
 		fmt.Println("Server connected to: ", conn.RemoteAddr())
 		dpe.serverConns = append(dpe.serverConns, conn)
-		go handleServerConnection(conn)
+		go dpe.handleServerConnection(conn)
 	}
 }
 
 // Handler for a connection that the server establishes with a foreign client
 func (dpe DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 
-	for {
+	for dpe.isRunning {
 		// TODO: make sure ReadRequest() blocks
 		gQueryData, _ := network.ReadRequest(conn)
 		var gQuery *grep.GrepQuery = grep.DeserializeGrepQuery(gQueryData)
@@ -200,9 +201,11 @@ func (dpe DistributedGrepEngine) localExecute(gquery grep.GrepQuery, outputChann
 	outputChannel <- &grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
 }
 
-/*
-TODO: change to better name
-*/
-func (dpe DistributedGrepEngine) Exit() {
+func (dpe DistributedGrepEngine) Shutdown() {
 	panic("Not implemented")
+	/*
+		TODO:
+			* close all peer client connections
+			* close server connections (or is that already handled)
+	*/
 }

@@ -5,6 +5,7 @@ import (
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/utils"
 	"fmt"
+	"io"
 )
 
 /**
@@ -35,10 +36,10 @@ func main() {
 
 	for {
 		utils.DisplayGrepPrompt()
-		rawInput := utils.ReadUserInput()
+		rawInput, input_err := utils.ReadUserInput()
 
-		if rawInput == "exit" {
-			engine.Exit()
+		if rawInput == "exit" || input_err == io.EOF {
+			engine.Shutdown()
 		}
 
 		grepQuery, err := grep.CreateGrepQueryFromInput(rawInput)
