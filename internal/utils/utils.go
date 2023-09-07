@@ -27,9 +27,7 @@ func GetLocalhostPort(machineNameFormat string, portFormat string, numMachines i
 	return ""
 }
 
-// Return a tuple where first value is the this machine's ip address concatenated with its
-// respective port that is assigned to it, and then second value of the tuple is a slice of
-// the ip addresses concatenated with their respective ports of all the peer servers
+// Return a slice of the ip addresses concatenated with their respective ports of all the peer servers
 func GetPeerServerAddresses(machineNameFormat string, portFormat string, numMachines int) []string {
 	thisMachineName, err := os.Hostname() // to make sure we don't add our hostname as the peer
 	if err != nil {
