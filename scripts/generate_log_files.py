@@ -183,7 +183,6 @@ def add_known_lines(known_lines, logger):
 
 def main():
 
-    each file should have a different format
     files = ['test_log_file1.log', 'test_log_file2.log', 'test_log_file3.log']
     file_lines = [100, 56, 456]
     known_lines = [[(logging.info, "User logged in"),
@@ -202,15 +201,6 @@ def main():
     
     with_time = [False, True, True]
 
-    files = ["test_log_file3.log"]
-    file_lines = [456]
-    known_lines = [[(logging.error, "File not found: 'file.txt'"),
-                    (logging.debug, "Debug message: Processing step 3"),
-                    (logging.info, "Scheduled maintenance task started"),
-                    (logging.info, "Received 200 OK response from API endpoint"),
-                    (logging.critical, "Application halted: fatal error")]]
-    
-    with_time = [True]
 
     for i in range(len(files)):
         generate_log_file(files[i], file_lines[i], with_time[i], known_lines[i], i)
