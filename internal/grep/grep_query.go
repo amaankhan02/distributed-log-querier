@@ -5,7 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"os/exec"d
+	"os/exec"
 	"strings"
 )
 
@@ -100,32 +100,32 @@ func parseRawGrepQuery(userInput string) ([]string, error) {
 }
 
 // Helper function to be used in ParseRawGrepQuery
-// loop through and see if any of the command arguments start with quotoations " or ' & handle that
+// loop through and see if any of the command arguments start with quotations " or ' & handle that
 func handleExtraQuotes(cmdArgs []string) []string {
-	var result []string
-	var currentString string
+	result_grep_query := []string{}
+	modified_cmd := ""
 
 	for _, cmd := range cmdArgs {
 
 		if strings.HasPrefix(cmd, `"`) && strings.HasSuffix(cmd, `"`) {
 
 			cmd = strings.Trim(cmd, `"`)
-			result = append(result, cmd)
+			result_grep_query = append(result_grep_query, cmd)
 		} else {
 
 			if strings.HasPrefix(cmd, `"`) {
-				currentString = cmd
+				modified_cmd = cmd
 			} else if strings.HasSuffix(cmd, `"`) {
-				currentString += " " + cmd
-				result = append(result, strings.Trim(currentString, `"`))
-				currentString = ""
-			} else if currentString != "" {
-				currentString += " " + cmd
+				modified_cmd += " " + cmd
+				result_grep_query = append(result_grep_query, strings.Trim(modified_cmd, `"`))
+				modified_cmd = ""
+			} else if modified_cmd != "" {
+				modified_cmd = modified_cmd + " " + cmd
 			} else {
-				result = append(result, cmd)
+				result_grep_query = append(result_grep_query, cmd)
 			}
 		}
 	}
 
-	return result
+	return result_grep_query
 }
