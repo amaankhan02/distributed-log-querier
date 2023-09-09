@@ -25,8 +25,8 @@ type DistributedGrepEngine struct {
 	serverQuit chan interface{}
 	serverWg   sync.WaitGroup
 
-	clientConns      []net.Conn        // client connections to the peers
-	activeClients    map[string]bool 	// key = addr of client, value = True if connection is active. False if disconnected
+	clientConns      []net.Conn      // client connections to the peers
+	activeClients    map[string]bool // key = addr of client, value = True if connection is active. False if disconnected
 	numActiveClients int
 
 	serverPort    string
@@ -52,7 +52,7 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 
 	dpe.lruCache, dpe.cacheInitalizationError = lru.New(0)
 	if dpe.cacheInitalizationError != nil {
-		log.FatalF("Error in initializing LRU Cache")
+		log.Fatalf("Error in initializing LRU Cache")
 	}
 
 	return dpe
@@ -140,7 +140,7 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 		var gOut *grep.GrepOutput
 		var ok bool
 
-		cacheKey := gQuery.PackagedString()
+		cacheKey := gQuery.PackagedString
 		if dpe.lruCache.Contains(cacheKey) {
 			i, ok = dpe.lruCache.Get(cacheKey)
 			gOut = i.(*grep.GrepOutput)
@@ -184,7 +184,7 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 
 	// launch goroutines for local and remote executions to all run in parallel
 	go dpe.localExecute(gquery, localChannel)
-	
+
 	var peerChannelIdx = 0
 	for i := 0; i < numTotalPeerConnections; i++ {
 		currConn := dpe.clientConns[i]
@@ -258,7 +258,7 @@ func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputCha
 	var grepOutput *grep.GrepOutput
 	var ok bool
 
-	cacheKey := gquery.PackagedString()
+	cacheKey := gquery.PackagedString
 	if dpe.lruCache.Contains(cacheKey) {
 		i, ok = dpe.lruCache.Get(cacheKey)
 		grepOutput = i.(*grep.GrepOutput)
@@ -271,7 +271,7 @@ func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputCha
 		dpe.lruCache.Add(cacheKey, grepOutput)
 	}
 
-	outputChannel <- grepOutput 
+	outputChannel <- grepOutput
 
 }
 

@@ -20,7 +20,7 @@ type GrepQuery struct {
 	// In that case, change this from a struct to "type GrepQuery []string" since its just the cmdArgs
 }
 
-//type GrepQuery []string
+const DELIMITER = ";"
 
 func CreateGrepQueryFromInput(rawUserInput string) (*GrepQuery, error) {
 	g := &GrepQuery{}
@@ -28,9 +28,9 @@ func CreateGrepQueryFromInput(rawUserInput string) (*GrepQuery, error) {
 	if err != nil {
 		return g, err
 	}
-	
-	g.cmdArgs = query
-	g.packagedString = strings.Join(g.cmdArgs, ";")
+
+	g.CmdArgs = query
+	g.PackagedString = strings.Join(g.CmdArgs, DELIMITER)
 
 	return g, nil
 }
@@ -38,7 +38,7 @@ func CreateGrepQueryFromInput(rawUserInput string) (*GrepQuery, error) {
 // Given a packagedString (grep query with cmd args split by "-") it returns a GrepQuery object
 func CreateGrepQueryFromPackagedString(packagedString string) *GrepQuery {
 	g := &GrepQuery{}
-	g.CmdArgs = strings.Split(packagedString, "-")
+	g.CmdArgs = strings.Split(packagedString, DELIMITER)
 	g.PackagedString = packagedString
 	return g
 }
@@ -135,8 +135,4 @@ func handleExtraQuotes(cmdArgs []string) []string {
 	}
 
 	return result_grep_query
-}
-
-func (q *GrepQuery) PackagedString() string {
-	return q.packagedString
 }
