@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 )
@@ -19,7 +20,8 @@ Format: [size][data]
 */
 func SendRequest(data []byte, conn net.Conn) error {
 	size := len(data)
-
+	fmt.Println("----------SEND REQUEST() --------------")
+	fmt.Printf("data: %v\n, data_size: %d\n", data, size)
 	err := sendMessageSize(size, conn, MESSAGE_SIZE_BYTES)
 	if err != nil {
 		return err
@@ -70,7 +72,8 @@ func readMessageSize(reader *bufio.Reader, messageSizeBytes int) (int, error) {
 	}
 
 	buff := make([]byte, messageSizeBytes)
-	_, err := io.ReadFull(reader, buff)
+	n_bytes, err := io.ReadFull(reader, buff)
+	fmt.Printf("Bytes read: %d\n", n_bytes)
 	if err != nil {
 		return 0, err
 	}
@@ -90,11 +93,13 @@ func sendMessageSize(base10Number int, conn net.Conn, messageSizeBytes int) erro
 	size := make([]byte, MESSAGE_SIZE_BYTES)
 	if messageSizeBytes == 4 {
 		binary.LittleEndian.PutUint32(size, uint32(base10Number))
+		fmt.Printf("base10Number: %d\nbinary number: %v\n", base10Number, size)
 	} else if messageSizeBytes == 8 {
 		binary.LittleEndian.PutUint64(size, uint64(base10Number))
 	}
 
-	_, err := conn.Write(size) // _ is the number of bytes sent
+	n_bytes, err := conn.Write(size) // _ is the number of bytes sent
+	fmt.Printf("n_bytes written: %d", n_bytes)
 
 	if err != nil {
 		return err

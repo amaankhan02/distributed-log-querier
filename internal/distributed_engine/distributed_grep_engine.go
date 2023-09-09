@@ -123,7 +123,7 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			return
 		}
 
-		gQuery := grep.DeserializeGrepQuery(gQueryData)
+		gQuery := grep.DeserializeGrepQuery(gQueryData)		// ! RETURNING A NULL OBJECT
 		gOut := gQuery.Execute(dpe.localLogFile)
 		gOutData := grep.SerializeGrepOutput(gOut)
 		err := network.SendRequest(gOutData, conn)
@@ -201,7 +201,10 @@ Parameters:
 	outputChannel: channel that remoteExecute() will send its grep output to
 */
 func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net.Conn, outputChannel chan *grep.GrepOutput) {
+	fmt.Printf("gquery.cmdArgs: %s\n", gquery.GetCmdArgs())
+
 	gquery_data := grep.SerializeGrepQuery(gquery)
+	fmt.Printf("Serialized gquery: %v\n", gquery_data)
 	err := network.SendRequest(gquery_data, conn)
 	if err != nil {
 		fmt.Printf("Failed to send gquery_data to %s", conn.RemoteAddr()) // TODO: how to handle this error?!

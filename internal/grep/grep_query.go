@@ -23,6 +23,10 @@ type GrepQuery struct {
 
 //type GrepQuery []string
 
+func (g *GrepQuery) GetCmdArgs() []string {
+	return g.cmdArgs
+}
+
 func CreateGrepQueryFromInput(rawUserInput string) (*GrepQuery, error) {
 	g := &GrepQuery{}
 	query, err := parseRawGrepQuery(rawUserInput)
@@ -69,6 +73,9 @@ func DeserializeGrepQuery(data []byte) *GrepQuery {
 // Executes the grep query on the file provided, and returns a GrepOutput object
 func (q *GrepQuery) Execute(filename string) *GrepOutput {
 	// make last arg the file to search -> which will be the log file for machine
+	// fmt.Printf("Filename: %s\n", filename)
+	// fmt.Printf("q: %v\n", q)
+	// fmt.Printf("*q: %v\n", *q)
 	cmdLineArgs := append(q.cmdArgs, filename)
 	cmd := exec.Command(cmdLineArgs[0], cmdLineArgs[1:]...) //Define grep command to run, store in cmd
 
