@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 // DistributedEngine: Struct defining the distributed_engine to handle the Distributed Grep execution across
@@ -160,11 +161,15 @@ func (dpe *DistributedGrepEngine) checkCacheOrExecute(gQuery *grep.GrepQuery) *g
 
 	cacheKey := gQuery.PackagedString
 	if dpe.lruCache.Contains(cacheKey) {
+		start := time.Now()
 		cacheValue, ok = dpe.lruCache.Get(cacheKey)
 		if !ok {
 			log.Fatalf("Error in getting cache value: lruCache.Get(%s)", cacheKey)
 		}
 		gOut = cacheValue.(*grep.GrepOutput)
+		end := time.Now()
+		elapsed := end.Sub(start)
+		gOut.ExecutionTime = elapsed // update exec time since we now got it from cache
 	} else {
 		gOut = gQuery.Execute(dpe.localLogFile)
 		dpe.lruCache.Add(cacheKey, gOut)
@@ -263,7 +268,6 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := dpe.checkCacheOrExecute(gquery)
 	outputChannel <- grepOutput
-
 }
 
 func (dpe *DistributedGrepEngine) Shutdown() {

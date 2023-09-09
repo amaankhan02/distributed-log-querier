@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 // Represents details of the grep query a user my type in. Contains all information of that
@@ -71,9 +72,7 @@ func DeserializeGrepQuery(data []byte) (*GrepQuery, error) {
 // Executes the grep query on the file provided, and returns a GrepOutput object
 func (q *GrepQuery) Execute(filename string) *GrepOutput {
 	// make last arg the file to search -> which will be the log file for machine
-	// fmt.Printf("Filename: %s\n", filename)
-	// fmt.Printf("q: %v\n", q)
-	// fmt.Printf("*q: %v\n", *q)
+	start := time.Now()
 	cmdLineArgs := append(q.CmdArgs, filename)
 	cmd := exec.Command(cmdLineArgs[0], cmdLineArgs[1:]...) //Define grep command to run, store in cmd
 
@@ -86,8 +85,10 @@ func (q *GrepQuery) Execute(filename string) *GrepOutput {
 
 	outputStr := string(binaryOutput)
 	numLines := strings.Count(outputStr, "\n")
+	end := time.Now()
+	elapsedTime := end.Sub(start)
 
-	return &GrepOutput{outputStr, filename, numLines}
+	return &GrepOutput{outputStr, filename, numLines, elapsedTime}
 }
 
 // Parses the grep query user entered. Returns a slice containing the individual command arguments
