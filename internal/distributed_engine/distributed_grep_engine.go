@@ -115,8 +115,8 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 	for {
 		// TODO: make sure ReadRequest() blocks
 		gQueryData, read_err := network.ReadRequest(reader)
-		if read_err == io.EOF {
-			log.Println("GOT EOF IN HANDLESERVERCONNECTION()... WHAT TO DO HERE!!!??") // TODO: HANDLE THIS
+		if read_err == io.EOF {		// this server-client connection disconnected, so we can remove
+			log.Printf("\n**Client [%s] disconnected**\n", conn.RemoteAddr().String())
 			return
 		} else if read_err != nil {
 			log.Println("GOT OTHER ERROR IN HANDLESERVERCONNECTION()... WHAT TO DO HERE!!??") // TODO: HANDE THIS
@@ -128,11 +128,11 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			log.Fatalf("Failed to Deserialize Grep Query: %v", err1)
 		}
 
-		log.Printf("RECIEVED GREP QUERY: %s\n", gQuery.CmdArgs)
+		// log.Printf("RECIEVED GREP QUERY: %s\n", gQuery.CmdArgs)
 
 		gOut := gQuery.Execute(dpe.localLogFile)
 
-		log.Printf("EXECUTED GREP OUTPUT: %s\n", gOut.Output)
+		// log.Printf("EXECUTED GREP OUTPUT: %s\n", gOut.Output)
 
 		gOutData, err2 := grep.SerializeGrepOutput(gOut)
 		if err2 != nil {
@@ -143,7 +143,7 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			_, _ = fmt.Fprintf(os.Stderr, "*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
 			continue
 		}
-		log.Printf("Sent %d bytes of serialized data", len(gOutData))
+		// log.Printf("Sent %d bytes of serialized data", len(gOutData))
 	}
 	// TODO: how do i exit this function? Should probably have an exit feature in my program...
 }
@@ -160,33 +160,20 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	numPeerConnections := len(dpe.clientConns)
 	peerChannels := make([]chan *grep.GrepOutput, numPeerConnections)
 	localChannel := make(chan *grep.GrepOutput)
-	var wg sync.WaitGroup
 	var totalNumLines int
 
 	for i := 0; i < numPeerConnections; i++ {
 		peerChannels[i] = make(chan *grep.GrepOutput)
 	}
 
-	// launch remote executions
+	// launch goroutines for local and remote executions to all run in parallel
+	go dpe.localExecute(gquery, localChannel)
 	for i := 0; i < numPeerConnections; i++ {
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-			dpe.remoteExecute(gquery, dpe.clientConns[idx], peerChannels[idx])
-		}(i) // pass in i so that it accesses the correct values from peerConnections & channels since i will change
+		go dpe.remoteExecute(gquery, dpe.clientConns[i], peerChannels[i])
 	}
-
-	// launch goroutine for local execution
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		dpe.localExecute(gquery, localChannel)
-	}()
-
-	log.Println("dpe.Execute: Waiting for all goroutines to finish")
-	// wait for all goroutines to finish  (similar to pthread_join)
-	wg.Wait()
-	log.Println("dpe.Execute: Done waiting for all goroutines to finish")
+	
+	// * NOTE: localExecute() and remoteExecute() will not exit until its respective channels are read from since the channels
+	// * once written to will block until someone reads from them. Therefore it will block until it is read from below
 
 	// Print local grep output to stdout
 	grepOut := <-localChannel
@@ -241,13 +228,13 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 	if err1 != nil {
 		log.Fatalf("Failed to Deserialize Grep Output: %v", err1)
 	}
-	log.Printf("remoteExecute(): Received grepOutput from remote. Num Lines: %d\n", grepOutput.NumLines)
+	// log.Printf("remoteExecute(): Received grepOutput from remote. Num Lines: %d\n", grepOutput.NumLines)
 	outputChannel <- grepOutput
 }
 
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := gquery.Execute(dpe.localLogFile)
-	log.Printf("localExecute(): grepOutput Num Lines: %d\n", grepOutput.NumLines)
+	// log.Printf("localExecute(): grepOutput Num Lines: %d\n", grepOutput.NumLines)
 	outputChannel <- grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
 }
 
