@@ -183,8 +183,10 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 		dpe.localExecute(gquery, localChannel)
 	}()
 
+	log.Println("dpe.Execute: Waiting for all goroutines to finish")
 	// wait for all goroutines to finish  (similar to pthread_join)
 	wg.Wait()
+	log.Println("dpe.Execute: Done waiting for all goroutines to finish")
 
 	// Print local grep output to stdout
 	grepOut := <-localChannel
@@ -223,7 +225,7 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 	// fmt.Printf("Serialized gquery: %v\n", gquery_data)
 	err := network.SendRequest(gquery_data, conn)
 	if err != nil {
-		fmt.Printf("Failed to send gquery_data to %s", conn.RemoteAddr()) // TODO: how to handle this error?!
+		fmt.Printf("Failed to send gquery_data to %s\n", conn.RemoteAddr()) // TODO: how to handle this error?!
 		return
 	}
 
@@ -231,7 +233,7 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 	reader := bufio.NewReader(conn)
 	byte_data, err2 := network.ReadRequest(reader)
 	if err2 != nil {
-		fmt.Printf("Failed to read gquery_data from %s", conn.RemoteAddr()) // TODO: how to handle this error?!
+		fmt.Printf("Failed to read gquery_data from %s\n", conn.RemoteAddr()) // TODO: how to handle this error?!
 		return
 	}
 
@@ -239,11 +241,13 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 	if err1 != nil {
 		log.Fatalf("Failed to Deserialize Grep Output: %v", err1)
 	}
+	log.Printf("remoteExecute(): Received grepOutput from remote. Num Lines: %d\n", grepOutput.NumLines)
 	outputChannel <- grepOutput
 }
 
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := gquery.Execute(dpe.localLogFile)
+	log.Printf("localExecute(): grepOutput Num Lines: %d\n", grepOutput.NumLines)
 	outputChannel <- grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
 }
 
