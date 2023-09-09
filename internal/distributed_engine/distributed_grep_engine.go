@@ -12,8 +12,6 @@ import (
 	"sync"
 )
 
-// TODO: CHANGE ALL PASS BY VALUE STRUCT FUNCTION TO PASS BY POINTER (s *Server) instead
-
 // DistributedEngine: Struct defining the distributed_engine to handle the Distributed Grep execution across
 // multiple peer machines.
 // Contains a server and client where the server accepts connections from all peer machines, and
@@ -27,7 +25,7 @@ type DistributedGrepEngine struct {
 	serverWg   sync.WaitGroup
 
 	clientConns      []net.Conn        // client connections to the peers
-	activeClients    map[net.Conn]bool // hash-map where value = True if the connection is active. False o.w.
+	activeClients    map[string]bool 	// key = addr of client, value = True if connection is active. False if disconnected
 	numActiveClients int
 
 	serverPort    string
@@ -44,7 +42,7 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 	dpe.localLogFile = localLogFile
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
-	dpe.activeClients = make(map[net.Conn]bool)
+	dpe.activeClients = make(map[string]bool)
 	return dpe
 }
 
@@ -62,13 +60,12 @@ func (dpe *DistributedGrepEngine) ConnectToPeers() {
 			continue
 		}
 		dpe.clientConns = append(dpe.clientConns, conn)
-		dpe.activeClients[conn] = true
+		dpe.activeClients[generateClientConnKey(conn)] = true
 		dpe.numActiveClients += 1
 	}
 }
 
 // Initialize Server on a separate goroutine and engine now actively listens to new connections
-// TODO: change name to StartServer() later
 func (dpe *DistributedGrepEngine) InitializeServer() {
 	l, err := net.Listen("tcp", dpe.serverPort)
 	if err != nil {
@@ -96,7 +93,6 @@ func (dpe *DistributedGrepEngine) serve() {
 				log.Println("Accept() error: ", err)
 			}
 		} else {
-			fmt.Println("Server connected to: ", conn.RemoteAddr())
 			connectionMsg := fmt.Sprintf("Server connected to: %s", conn.RemoteAddr())
 			utils.PrintMessage(connectionMsg)
 			dpe.serverWg.Add(1)
@@ -160,10 +156,12 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 
 	// launch goroutines for local and remote executions to all run in parallel
 	go dpe.localExecute(gquery, localChannel)
+	
 	var peerChannelIdx = 0
 	for i := 0; i < numTotalPeerConnections; i++ {
-		if dpe.activeClients[dpe.clientConns[i]] == true {
-			go dpe.remoteExecute(gquery, dpe.clientConns[i], peerChannels[peerChannelIdx])
+		currConn := dpe.clientConns[i]
+		if dpe.activeClients[generateClientConnKey(currConn)] == true {
+			go dpe.remoteExecute(gquery, currConn, peerChannels[peerChannelIdx])
 			peerChannelIdx += 1
 		}
 	}
@@ -248,6 +246,13 @@ func (dpe *DistributedGrepEngine) StopServer() {
 // When a client was disconnected, call this function to remove
 // the client information from the DistributedGrepEngine struct
 func (dpe *DistributedGrepEngine) removeClient(conn net.Conn) {
-	dpe.activeClients[conn] = false
+	dpe.activeClients[generateClientConnKey(conn)] = false
 	dpe.numActiveClients -= 1
+}
+
+// Generate a key for a connection object for the client
+func generateClientConnKey(conn net.Conn) string {
+	remote_addr := conn.RemoteAddr().String()
+	ip, _, _ := net.SplitHostPort(remote_addr)
+	return ip
 }
