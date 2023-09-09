@@ -123,9 +123,15 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			return
 		}
 
-		gQuery := grep.DeserializeGrepQuery(gQueryData)		// ! RETURNING A NULL OBJECT
+		gQuery, err1 := grep.DeserializeGrepQuery(gQueryData)		// ! RETURNING A NULL OBJECT
+		if err1 != nil {
+			log.Fatalf("Failed to Deserialize Grep Query: %v", err1)
+		}
 		gOut := gQuery.Execute(dpe.localLogFile)
-		gOutData := grep.SerializeGrepOutput(gOut)
+		gOutData, err2 := grep.SerializeGrepOutput(gOut)
+		if err2 != nil {
+			log.Fatalf("Failed to Serialize Grep Output: %v", err2)
+		}
 		err := network.SendRequest(gOutData, conn)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
@@ -222,7 +228,10 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 		return
 	}
 
-	grepOutput := grep.DeserializeGrepOutput(byte_data)
+	grepOutput, err1 := grep.DeserializeGrepOutput(byte_data)
+	if err1 != nil {
+		log.Fatalf("Failed to Deserialize Grep Output: %v", err1)
+	}
 	outputChannel <- grepOutput
 }
 
