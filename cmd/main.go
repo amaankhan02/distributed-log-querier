@@ -29,10 +29,12 @@ const (
 
 var flagNumMachines *int
 var localLogFile *string // full path of the local log file of this machine
+var cacheSize *int
 
 func ParseArguments() {
-	flagNumMachines = flag.Int("m", 10, "Number of Machines in the network in the range [2, 10]")
+	flagNumMachines = flag.Int("n", 10, "Number of Machines in the network in the range [2, 10]")
 	filename := flag.String("f", "", "Filename of the log file")
+	cacheSize = flag.Int("c", 10, "Size of the in-memory LRU cache")
 	flag.Parse()
 
 	fullPath, err := filepath.Abs(*filename)
@@ -50,8 +52,7 @@ func main() {
 
 	peerServerAddresses := utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
 	serverPort := utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
-	//localLogFile := utils.GetLocalLogFile()
-	engine := distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses)
+	engine := distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize)
 
 	fmt.Println("Setting up server. Listening to new connections...")
 	engine.InitializeServer()

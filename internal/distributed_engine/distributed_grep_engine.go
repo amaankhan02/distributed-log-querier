@@ -40,7 +40,7 @@ type DistributedGrepEngine struct {
 /*
 Creates a DistributedGrepEngine struct and initializes with default values
 */
-func CreateEngine(localLogFile string, serverPort string, peerAddresses []string) *DistributedGrepEngine {
+func CreateEngine(localLogFile string, serverPort string, peerAddresses []string, cacheSize int) *DistributedGrepEngine {
 	// initialize server and client connections here
 
 	// initialize cache
@@ -50,7 +50,7 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 	dpe.peerAddresses = peerAddresses
 	dpe.activeClients = make(map[string]bool)
 
-	dpe.lruCache, dpe.cacheInitalizationError = lru.New(0)
+	dpe.lruCache, dpe.cacheInitalizationError = lru.New(cacheSize)
 	if dpe.cacheInitalizationError != nil {
 		log.Fatalf("Error in initializing LRU Cache")
 	}
@@ -135,23 +135,7 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			log.Fatalf("Failed to Deserialize Grep Query: %v", err1)
 		}
 
-		var i interface{}
-
-		var gOut *grep.GrepOutput
-		var ok bool
-
-		cacheKey := gQuery.PackagedString
-		if dpe.lruCache.Contains(cacheKey) {
-			i, ok = dpe.lruCache.Get(cacheKey)
-			gOut = i.(*grep.GrepOutput)
-
-			if !ok {
-				log.Fatalf("Error in getting cache value: lruCache.Get(%s)", cacheKey)
-			}
-		} else {
-			gOut = gQuery.Execute(dpe.localLogFile)
-			dpe.lruCache.Add(cacheKey, gOut)
-		}
+		gOut := dpe.checkCacheOrExecute(gQuery) // retrieve output from cache or execute function if not in there
 
 		gOutData, err2 := grep.SerializeGrepOutput(gOut)
 		if err2 != nil {
@@ -163,6 +147,30 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			log.Fatalf("SendRequest: Failed to send Grep Output Data to %s", conn.RemoteAddr().String())
 		}
 	}
+}
+
+// Helper function that first checks if the query is present in the cache.
+// If it is, it returns the output from the cache as well as updating the LRU position of the cache
+// Otherwise, it executes the grep query and stores output in the cache, and then returns the output
+func (dpe *DistributedGrepEngine) checkCacheOrExecute(gQuery *grep.GrepQuery) *grep.GrepOutput {
+	var cacheValue interface{}
+
+	var gOut *grep.GrepOutput
+	var ok bool
+
+	cacheKey := gQuery.PackagedString
+	if dpe.lruCache.Contains(cacheKey) {
+		cacheValue, ok = dpe.lruCache.Get(cacheKey)
+		if !ok {
+			log.Fatalf("Error in getting cache value: lruCache.Get(%s)", cacheKey)
+		}
+		gOut = cacheValue.(*grep.GrepOutput)
+	} else {
+		gOut = gQuery.Execute(dpe.localLogFile)
+		dpe.lruCache.Add(cacheKey, gOut)
+	}
+
+	return gOut
 }
 
 /*
@@ -253,24 +261,7 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 }
 
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
-	var i interface{}
-
-	var grepOutput *grep.GrepOutput
-	var ok bool
-
-	cacheKey := gquery.PackagedString
-	if dpe.lruCache.Contains(cacheKey) {
-		i, ok = dpe.lruCache.Get(cacheKey)
-		grepOutput = i.(*grep.GrepOutput)
-
-		if !ok {
-			log.Fatalf("Error in getting cache value: lruCache.Get(%s)", cacheKey)
-		}
-	} else {
-		grepOutput = gquery.Execute(dpe.localLogFile)
-		dpe.lruCache.Add(cacheKey, grepOutput)
-	}
-
+	grepOutput := dpe.checkCacheOrExecute(gquery)
 	outputChannel <- grepOutput
 
 }
