@@ -19,8 +19,8 @@ func TestExecuteGrepSimple(t *testing.T) {
 	filename := "C:\\Users\\samaa\\Documents\\2023-2024\\DistributedSystems\\MP1\\cs425_mp1\\test\\test_logs\\test_text_file1.txt" // Replace with the actual file path
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -45,8 +45,8 @@ func TestExecuteEndWithCmd(t *testing.T) {
 	filename := "test_logs/test_log_file5.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -72,8 +72,8 @@ func TestExecuteOrCmd(t *testing.T) {
 	filename := "test_logs/test_log_file4.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -100,8 +100,8 @@ func TestExecuteNumMatchesCmd(t *testing.T) {
 	filename := "test_logs/test_log_file6.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -126,8 +126,8 @@ func TestExecuteCaseInsensitiveCmd(t *testing.T) {
 	filename := "test_logs/test_log_file5.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -152,8 +152,8 @@ func TestExecuteLinesBeforeCmd(t *testing.T) {
 	filename := "test_logs/test_log_file6.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -178,8 +178,8 @@ func TestExecuteComplexRegEx1(t *testing.T) {
 	filename := "test_logs/test_log_file4.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -204,8 +204,8 @@ func TestExecuteComplexRegEx2(t *testing.T) {
 	filename := "test_logs/test_log_file4.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -230,8 +230,8 @@ func TestExecuteComplexRegEx3(t *testing.T) {
 	filename := "test_logs/test_log_file4.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)
@@ -256,8 +256,8 @@ func TestExecuteComplexRegEx4(t *testing.T) {
 	filename := "test_logs/test_log_file6.log"
 	grepOutput := q.Execute(filename)
 
-	lines := grepOutput.NumLines()
-	output := grepOutput.Output()
+	lines := grepOutput.NumLines
+	output := grepOutput.Output
 
 	if lines != expectedNumLines {
 		t.Errorf("Expected %d number of lines, but got %d", expectedNumLines, lines)

@@ -4,6 +4,7 @@ import (
 	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/utils"
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"io"
@@ -43,6 +44,9 @@ func ParseArguments() {
 
 func main() {
 	ParseArguments()
+
+	gob.Register(&grep.GrepQuery{})
+	gob.Register(&grep.GrepOutput{})
 
 	peerServerAddresses := utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
 	serverPort := utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
