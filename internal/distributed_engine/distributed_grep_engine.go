@@ -26,7 +26,9 @@ type DistributedGrepEngine struct {
 	serverQuit chan interface{}
 	serverWg   sync.WaitGroup
 
-	clientConns []net.Conn // client connections to the peers
+	clientConns      []net.Conn        // client connections to the peers
+	activeClients    map[net.Conn]bool // hash-map where value = True if the connection is active. False o.w.
+	numActiveClients int
 
 	serverPort    string
 	peerAddresses []string
@@ -42,7 +44,7 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 	dpe.localLogFile = localLogFile
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
-	//dpe.isRunning = false
+	dpe.activeClients = make(map[net.Conn]bool)
 	return dpe
 }
 
@@ -59,9 +61,9 @@ func (dpe *DistributedGrepEngine) ConnectToPeers() {
 			fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
 			continue
 		}
-		//defer conn.Close() 	// --> don't want to close the connection here itself... do it at shutdown
-
 		dpe.clientConns = append(dpe.clientConns, conn)
+		dpe.activeClients[conn] = true
+		dpe.numActiveClients += 1
 	}
 }
 
@@ -113,7 +115,6 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 		gQueryData, read_err := network.ReadRequest(reader)
 		if read_err == io.EOF { // this server-client connection disconnected, so we can remove
 			msg := fmt.Sprintf("\n**Client [%s] disconnected**\n", conn.RemoteAddr().String())
-			// TODO: disconnect client here
 			dpe.removeClient(conn)
 			utils.PrintMessage(msg)
 			return
@@ -148,19 +149,23 @@ Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
 func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
-	numPeerConnections := len(dpe.clientConns)
-	peerChannels := make([]chan *grep.GrepOutput, numPeerConnections)
+	numTotalPeerConnections := len(dpe.clientConns)
 	localChannel := make(chan *grep.GrepOutput)
 	var totalNumLines int
 
-	for i := 0; i < numPeerConnections; i++ {
+	peerChannels := make([]chan *grep.GrepOutput, dpe.numActiveClients)
+	for i := 0; i < dpe.numActiveClients; i++ {
 		peerChannels[i] = make(chan *grep.GrepOutput)
 	}
 
 	// launch goroutines for local and remote executions to all run in parallel
 	go dpe.localExecute(gquery, localChannel)
-	for i := 0; i < numPeerConnections; i++ {
-		go dpe.remoteExecute(gquery, dpe.clientConns[i], peerChannels[i])
+	var peerChannelIdx = 0
+	for i := 0; i < numTotalPeerConnections; i++ {
+		if dpe.activeClients[dpe.clientConns[i]] == true {
+			go dpe.remoteExecute(gquery, dpe.clientConns[i], peerChannels[peerChannelIdx])
+			peerChannelIdx += 1
+		}
 	}
 
 	// * NOTE: localExecute() and remoteExecute() will not exit until its respective channels are read from since the channels
@@ -243,19 +248,6 @@ func (dpe *DistributedGrepEngine) StopServer() {
 // When a client was disconnected, call this function to remove
 // the client information from the DistributedGrepEngine struct
 func (dpe *DistributedGrepEngine) removeClient(conn net.Conn) {
-	// Create a copy slice to set the dpe.clientConns to later
-	copyClients := make([]net.Conn, 0)
-	remIdx := -1
-	// first find the index of conn
-	for i, v := range dpe.clientConns {
-		if v == conn {
-			remIdx = i
-			break
-		}
-	}
-	if remIdx != -1 {
-		copyClients = append(dpe.clientConns[:remIdx], dpe.clientConns[remIdx+1:]...)
-		dpe.clientConns = copyClients
-		log.Println("Removed client from list")
-	}
+	dpe.activeClients[conn] = false
+	dpe.numActiveClients -= 1
 }
