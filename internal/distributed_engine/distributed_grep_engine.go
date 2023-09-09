@@ -6,6 +6,7 @@ import (
 	"cs425_mp1/internal/network"
 	"cs425_mp1/internal/utils"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"io"
 	"log"
 	"net"
@@ -31,6 +32,9 @@ type DistributedGrepEngine struct {
 	serverPort    string
 	peerAddresses []string
 	localLogFile  string
+
+	lruCache                *lru.Cache
+	cacheInitalizationError error
 }
 
 /*
@@ -38,11 +42,19 @@ Creates a DistributedGrepEngine struct and initializes with default values
 */
 func CreateEngine(localLogFile string, serverPort string, peerAddresses []string) *DistributedGrepEngine {
 	// initialize server and client connections here
+
+	// initialize cache
 	dpe := &DistributedGrepEngine{}
 	dpe.localLogFile = localLogFile
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
 	dpe.activeClients = make(map[string]bool)
+
+	dpe.lruCache, dpe.cacheInitalizationError = lru.New(0)
+	if dpe.cacheInitalizationError != nil {
+		log.FatalF("Error in initializing LRU Cache")
+	}
+
 	return dpe
 }
 
@@ -116,7 +128,6 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			return
 		} else if read_err != nil {
 			log.Fatalf("Error while performing network.ReadRequest()!")
-			return
 		}
 
 		gQuery, err1 := grep.DeserializeGrepQuery(gQueryData)
@@ -124,15 +135,32 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			log.Fatalf("Failed to Deserialize Grep Query: %v", err1)
 		}
 
-		gOut := gQuery.Execute(dpe.localLogFile)
+		var i interface{}
+
+		var gOut *grep.GrepOutput
+		var ok bool
+
+		cacheKey := gQuery.PackagedString()
+		if dpe.lruCache.Contains(cacheKey) {
+			i, ok = dpe.lruCache.Get(cacheKey)
+			gOut = i.(*grep.GrepOutput)
+
+			if !ok {
+				log.Fatalf("Error in getting cache value: lruCache.Get(%s)", cacheKey)
+			}
+		} else {
+			gOut = gQuery.Execute(dpe.localLogFile)
+			dpe.lruCache.Add(cacheKey, gOut)
+		}
+
 		gOutData, err2 := grep.SerializeGrepOutput(gOut)
 		if err2 != nil {
 			log.Fatalf("Failed to Serialize Grep Output: %v", err2)
 		}
+
 		err := network.SendRequest(gOutData, conn)
 		if err != nil {
-			log.Fatalf("*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
-			return // TODO: should I "return" or "continue"
+			log.Fatalf("SendRequest: Failed to send Grep Output Data to %s", conn.RemoteAddr().String())
 		}
 	}
 }
@@ -225,8 +253,26 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 }
 
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
-	grepOutput := gquery.Execute(dpe.localLogFile)
-	outputChannel <- grepOutput
+	var i interface{}
+
+	var grepOutput *grep.GrepOutput
+	var ok bool
+
+	cacheKey := gquery.PackagedString()
+	if dpe.lruCache.Contains(cacheKey) {
+		i, ok = dpe.lruCache.Get(cacheKey)
+		grepOutput = i.(*grep.GrepOutput)
+
+		if !ok {
+			log.Fatalf("Error in getting cache value: lruCache.Get(%s)", cacheKey)
+		}
+	} else {
+		grepOutput = gquery.Execute(dpe.localLogFile)
+		dpe.lruCache.Add(cacheKey, grepOutput)
+	}
+
+	outputChannel <- grepOutput 
+
 }
 
 func (dpe *DistributedGrepEngine) Shutdown() {

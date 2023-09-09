@@ -28,8 +28,10 @@ func CreateGrepQueryFromInput(rawUserInput string) (*GrepQuery, error) {
 	if err != nil {
 		return g, err
 	}
-	g.CmdArgs = query
-	g.PackagedString = strings.Join(g.CmdArgs, "-")
+	
+	g.cmdArgs = query
+	g.packagedString = strings.Join(g.cmdArgs, ";")
+
 	return g, nil
 }
 
@@ -133,4 +135,8 @@ func handleExtraQuotes(cmdArgs []string) []string {
 	}
 
 	return result_grep_query
+}
+
+func (q *GrepQuery) PackagedString() string {
+	return q.packagedString
 }
