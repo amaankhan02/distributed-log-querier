@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -44,7 +43,7 @@ func CreateGrepQueryFromPackagedString(packagedString string) *GrepQuery {
 
 func SerializeGrepQuery(gquery *GrepQuery) ([]byte, error) {
 	binary_buff := new(bytes.Buffer)
-	
+
 	encoder := gob.NewEncoder(binary_buff)
 	err := encoder.Encode(gquery)
 	// fmt.Printf("\n--------- SERIALIZE GREP QUERY ---------\nbinary_buff: %v\nbinary_buff.Bytes(): %v\n", binary_buff, binary_buff.Bytes())
@@ -80,7 +79,7 @@ func (q *GrepQuery) Execute(filename string) *GrepOutput {
 
 	// make sure there were matches in doing this
 	if err != nil { // TODO: why do we have to make sure there were matches tho?
-		fmt.Println("No matches") // TODO: ask samaah what to do instead cuz we shouldn't print in this
+		return &GrepOutput{Output: "", Filename: filename, NumLines: 0}
 	}
 
 	outputStr := string(binaryOutput)
