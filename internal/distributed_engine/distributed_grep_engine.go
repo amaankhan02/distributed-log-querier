@@ -5,6 +5,7 @@ import (
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/network"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"io"
 	"log"
 	"net"
@@ -33,7 +34,12 @@ type DistributedGrepEngine struct {
 	serverPort    string
 	peerAddresses []string
 	localLogFile  string
+
+	lruCache                *lru.Cache
+	cacheInitalizationError error
 	//isRunning     bool
+
+	// cache
 }
 
 /*
@@ -41,10 +47,18 @@ Creates a DistributedGrepEngine struct and initializes with default values
 */
 func CreateEngine(localLogFile string, serverPort string, peerAddresses []string) *DistributedGrepEngine {
 	// initialize server and client connections here
+
+	// initialize cache
 	dpe := &DistributedGrepEngine{}
 	dpe.localLogFile = localLogFile
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
+	dpe.lruCache, dpe.cacheInitalizationError = lru.New(0)
+
+	if dpe.cacheInitalizationError != nil {
+		fmt.Print("Error in initializing lru cache")
+	}
+
 	//dpe.isRunning = false
 	return dpe
 }
@@ -124,7 +138,25 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 		}
 
 		gQuery := grep.DeserializeGrepQuery(gQueryData)
-		gOut := gQuery.Execute(dpe.localLogFile)
+
+		var i interface{}
+
+		var gOut *grep.GrepOutput
+		var ok bool
+
+		cacheKey := gQuery.PackagedString()
+		if dpe.lruCache.Contains(cacheKey) {
+			i, ok = dpe.lruCache.Get(cacheKey)
+			gOut = i.(*grep.GrepOutput)
+
+			if !ok {
+				fmt.Print("Error in getting cache value")
+			}
+		} else {
+			gOut = gQuery.Execute(dpe.localLogFile)
+			dpe.lruCache.Add(cacheKey, gOut)
+		}
+
 		gOutData := grep.SerializeGrepOutput(gOut)
 		err := network.SendRequest(gOutData, conn)
 		if err != nil {
@@ -221,7 +253,24 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 }
 
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
-	grepOutput := gquery.Execute(dpe.localLogFile)
+	var i interface{}
+
+	var grepOutput *grep.GrepOutput
+	var ok bool
+
+	cacheKey := gquery.PackagedString()
+	if dpe.lruCache.Contains(cacheKey) {
+		i, ok = dpe.lruCache.Get(cacheKey)
+		grepOutput = i.(*grep.GrepOutput)
+
+		if !ok {
+			fmt.Print("Error in getting cache value")
+		}
+	} else {
+		grepOutput = gquery.Execute(dpe.localLogFile)
+		dpe.lruCache.Add(cacheKey, grepOutput)
+	}
+
 	outputChannel <- grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
 }
 
