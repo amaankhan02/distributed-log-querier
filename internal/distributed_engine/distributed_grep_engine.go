@@ -143,6 +143,7 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 			_, _ = fmt.Fprintf(os.Stderr, "*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
 			continue
 		}
+		log.Printf("Sent %d bytes of serialized data", len(gOutData))
 	}
 	// TODO: how do i exit this function? Should probably have an exit feature in my program...
 }

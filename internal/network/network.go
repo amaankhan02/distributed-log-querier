@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"log"
 	"net"
 )
 
@@ -25,8 +26,9 @@ func SendRequest(data []byte, conn net.Conn) error {
 	if err != nil {
 		return err
 	}
-
-	_, err = conn.Write(data)
+	var n_bytes int
+	n_bytes, err = conn.Write(data)
+	log.Printf("SendRequest: sent %d bytes of data\n", n_bytes)
 	if err != nil {
 		return err
 	}
@@ -97,8 +99,8 @@ func sendMessageSize(base10Number int, conn net.Conn, messageSizeBytes int) erro
 		binary.BigEndian.PutUint64(size, uint64(base10Number))
 	}
 
-	_, err := conn.Write(size) // _ is the number of bytes sent
-	// fmt.Printf("n_bytes written: %d", n_bytes)
+	n_bytes, err := conn.Write(size) // _ is the number of bytes sent
+	log.Printf("sendMessageSize: n_bytes written: %d", n_bytes)
 
 	if err != nil {
 		return err
