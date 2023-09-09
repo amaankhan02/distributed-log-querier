@@ -23,8 +23,8 @@ type GrepQuery struct {
 
 //type GrepQuery []string
 
-func CreateGrepQueryFromInput(rawUserInput string) (GrepQuery, error) {
-	g := GrepQuery{}
+func CreateGrepQueryFromInput(rawUserInput string) (*GrepQuery, error) {
+	g := &GrepQuery{}
 	query, err := parseRawGrepQuery(rawUserInput)
 	if err != nil {
 		return g, err
@@ -35,14 +35,14 @@ func CreateGrepQueryFromInput(rawUserInput string) (GrepQuery, error) {
 }
 
 // Given a packagedString (grep query with cmd args split by "-") it returns a GrepQuery object
-func CreateGrepQueryFromPackagedString(packagedString string) GrepQuery {
-	g := GrepQuery{}
+func CreateGrepQueryFromPackagedString(packagedString string) *GrepQuery {
+	g := &GrepQuery{}
 	g.cmdArgs = strings.Split(packagedString, "-")
 	g.packagedString = packagedString
 	return g
 }
 
-func SerializeGrepQuery(gquery GrepQuery) []byte {
+func SerializeGrepQuery(gquery *GrepQuery) []byte {
 	binary_buff := new(bytes.Buffer)
 
 	encoder := gob.NewEncoder(binary_buff)
@@ -67,7 +67,7 @@ func DeserializeGrepQuery(data []byte) *GrepQuery {
 }
 
 // Executes the grep query on the file provided, and returns a GrepOutput object
-func (q GrepQuery) Execute(filename string) GrepOutput {
+func (q *GrepQuery) Execute(filename string) *GrepOutput {
 	// make last arg the file to search -> which will be the log file for machine
 	cmdLineArgs := append(q.cmdArgs, filename)
 	cmd := exec.Command(cmdLineArgs[0], cmdLineArgs[1:]...) //Define grep command to run, store in cmd
@@ -82,7 +82,7 @@ func (q GrepQuery) Execute(filename string) GrepOutput {
 	outputStr := string(binaryOutput)
 	numLines := strings.Count(outputStr, "\n")
 
-	return GrepOutput{outputStr, filename, numLines}
+	return &GrepOutput{outputStr, filename, numLines}
 }
 
 // Parses the grep query user entered. Returns a slice containing the individual command arguments

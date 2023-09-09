@@ -15,22 +15,22 @@ type GrepOutput struct {
 }
 
 // Getter for numLines attribute
-func (g GrepOutput) NumLines() int {
+func (g *GrepOutput) NumLines() int {
 	return g.numLines
 }
 
 // Getter for filename attribute
-func (g GrepOutput) Filename() string {
+func (g *GrepOutput) Filename() string {
 	return g.filename
 }
 
 // Getter for output attribute
-func (g GrepOutput) Output() string {
+func (g *GrepOutput) Output() string {
 	return g.output
 }
 
 // Formats the contents of the GrepOutput as a string
-func (g GrepOutput) ToString() string {
+func (g *GrepOutput) ToString() string {
 	strFormat := "Filename: %s\nNumber of Lines: %d\nOutput:%s\n"
 	return fmt.Sprintf(strFormat, g.filename, g.numLines, g.output)
 }
@@ -38,7 +38,7 @@ func (g GrepOutput) ToString() string {
 // SerializeGrepOutput Serialize GrepOutput object into a byte array
 // The returned format is good to send over a TCP socket
 // Returns nil if it failed to serialize
-func SerializeGrepOutput(grepOutput GrepOutput) []byte {
+func SerializeGrepOutput(grepOutput *GrepOutput) []byte {
 	binary_buff := new(bytes.Buffer)
 
 	encoder := gob.NewEncoder(binary_buff)

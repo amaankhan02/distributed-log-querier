@@ -1,14 +1,18 @@
 package distributed_engine
 
 import (
+	"bufio"
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/network"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
 	"sync"
 )
+
+// TODO: CHANGE ALL PASS BY VALUE STRUCT FUNCTION TO PASS BY POINTER (s *Server) instead
 
 // DistributedEngine: Struct defining the distributed_engine to handle the Distributed Grep execution across
 // multiple peer machines.
@@ -18,32 +22,37 @@ import (
 // the output. The Server is responsible for listening to all machines for any grep queries.
 // When a query is received from a peer, it executes the local query and sends back the output
 type DistributedGrepEngine struct {
-	serverConns []net.Conn // server connections
+	// serverConns []net.Conn // server connections		// -> don't need this...
+	// server      *network.Server
+	listener   net.Listener // listener for the server
+	serverQuit chan interface{}
+	serverWg   sync.WaitGroup
+
 	clientConns []net.Conn // client connections to the peers
 
 	serverPort    string
 	peerAddresses []string
 	localLogFile  string
-	isRunning     bool
+	//isRunning     bool
 }
 
 /*
 Creates a DistributedGrepEngine struct and initializes with default values
 */
-func CreateEngine(localLogFile string, serverPort string, peerAddresses []string) DistributedGrepEngine {
+func CreateEngine(localLogFile string, serverPort string, peerAddresses []string) *DistributedGrepEngine {
 	// initialize server and client connections here
-	dpe := DistributedGrepEngine{}
+	dpe := &DistributedGrepEngine{}
 	dpe.localLogFile = localLogFile
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
-	dpe.isRunning = false
+	//dpe.isRunning = false
 	return dpe
 }
 
 // Initialize all clients by connecting to all the remote servers (peers)
 // This function assumes that the Peers are already setup with their server running. That is,
 // It will only connect to the machines that have their servers setup
-func (dpe DistributedGrepEngine) ConnectToPeers() {
+func (dpe *DistributedGrepEngine) ConnectToPeers() {
 	dpe.clientConns = make([]net.Conn, 0) // connection objects of all the connected servers (peers)
 
 	// connect to each server's ipAddress (acting as client - connecting to the servers)
@@ -60,47 +69,61 @@ func (dpe DistributedGrepEngine) ConnectToPeers() {
 }
 
 // Initialize Server on a separate goroutine and engine now actively listens to new connections
-func (dpe DistributedGrepEngine) InitializeServer() {
-	dpe.isRunning = true
-	go dpe.initServer()
+// TODO: change name to StartServer() later
+func (dpe *DistributedGrepEngine) InitializeServer() {
+	l, err := net.Listen("tcp", dpe.serverPort)
+	if err != nil {
+		log.Fatalf("net.Listen(): %v", err)
+	}
+	dpe.listener = l
+	dpe.serverWg.Add(1)
+
+	// dpe.isRunning = true
+	go dpe.serve()
 }
 
 // Helper function
 // Create socket endpoint on the port passed in, and listen to new connections to this server
 // For every new accepted TCP connection, call a new goroutine to handle that connection
-func (dpe DistributedGrepEngine) initServer() {
-	listen, err := net.Listen("tcp", dpe.serverPort)
-	if err != nil {
-		log.Fatalf("net.Listen(): %v", err)
-	}
-	defer func(listen net.Listener) {
-		err := listen.Close()
-		if err != nil {
-			log.Fatalf("listen.Close(): %v", err)
-		}
-	}(listen)
+func (dpe *DistributedGrepEngine) serve() {
+	defer dpe.serverWg.Done()
 
 	// Listen for connections, accept, and spawn goroutine to handle that connection
 	for {
-		conn, err := listen.Accept()
+		conn, err := dpe.listener.Accept()
 		if err != nil {
-			log.Fatalf("listen.Accept(): %v", err)
+			select {
+			case <-dpe.serverQuit: // signal server to quit
+				return
+			default:
+				log.Println("Accept() error: ", err)
+			}
+		} else {
+			fmt.Println("Server connected to: ", conn.RemoteAddr())
+			dpe.serverWg.Add(1)
+			go func() {
+				dpe.handleServerConnection(conn)
+				dpe.serverWg.Done()
+			}()
 		}
-
-		// TODO: do i need to defer conn.Close()? and do i need to use any waitGroups...?
-		fmt.Println("Server connected to: ", conn.RemoteAddr())
-		dpe.serverConns = append(dpe.serverConns, conn)
-		go dpe.handleServerConnection(conn)
 	}
 }
 
 // Handler for a connection that the server establishes with a foreign client
-func (dpe DistributedGrepEngine) handleServerConnection(conn net.Conn) {
-
-	for dpe.isRunning {
+func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	for {
 		// TODO: make sure ReadRequest() blocks
-		gQueryData, _ := network.ReadRequest(conn)
-		var gQuery *grep.GrepQuery = grep.DeserializeGrepQuery(gQueryData)
+		gQueryData, read_err := network.ReadRequest(reader)
+		if read_err == io.EOF {
+			log.Println("GOT EOF IN HANDLESERVERCONNECTION()... WHAT TO DO HERE!!!??") // TODO: HANDLE THIS
+			return
+		} else if read_err != nil {
+			log.Println("GOT OTHER ERROR IN HANDLESERVERCONNECTION()... WHAT TO DO HERE!!??") // TODO: HANDE THIS
+			return
+		}
+
+		gQuery := grep.DeserializeGrepQuery(gQueryData)
 		gOut := gQuery.Execute(dpe.localLogFile)
 		gOutData := grep.SerializeGrepOutput(gOut)
 		err := network.SendRequest(gOutData, conn)
@@ -119,7 +142,7 @@ to all peer machines and receive back output from them
 Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
-func (dpe DistributedGrepEngine) Execute(gquery grep.GrepQuery) {
+func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	// TODO: change all NUM_MACHINES to be just the active connected machine not NUM_MACHINES since we don't know how many are connected
 	numPeerConnections := len(dpe.clientConns)
 	peerChannels := make([]chan *grep.GrepOutput, numPeerConnections)
@@ -177,7 +200,7 @@ Parameters:
 	conn: net.Conn client object to the remote machine
 	outputChannel: channel that remoteExecute() will send its grep output to
 */
-func (dpe DistributedGrepEngine) remoteExecute(gquery grep.GrepQuery, conn net.Conn, outputChannel chan *grep.GrepOutput) {
+func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net.Conn, outputChannel chan *grep.GrepOutput) {
 	gquery_data := grep.SerializeGrepQuery(gquery)
 	err := network.SendRequest(gquery_data, conn)
 	if err != nil {
@@ -186,26 +209,38 @@ func (dpe DistributedGrepEngine) remoteExecute(gquery grep.GrepQuery, conn net.C
 	}
 
 	// wait to recv data back
-	byte_data, err2 := network.ReadRequest(conn)
+	reader := bufio.NewReader(conn)
+	byte_data, err2 := network.ReadRequest(reader)
 	if err2 != nil {
 		fmt.Printf("Failed to read gquery_data from %s", conn.RemoteAddr()) // TODO: how to handle this error?!
 		return
 	}
 
-	var grepOutput = grep.DeserializeGrepOutput(byte_data)
+	grepOutput := grep.DeserializeGrepOutput(byte_data)
 	outputChannel <- grepOutput
 }
 
-func (dpe DistributedGrepEngine) localExecute(gquery grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
+func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := gquery.Execute(dpe.localLogFile)
-	outputChannel <- &grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
+	outputChannel <- grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
 }
 
-func (dpe DistributedGrepEngine) Shutdown() {
-	panic("Not implemented")
+func (dpe *DistributedGrepEngine) Shutdown() {
+
 	/*
 		TODO:
 			* close all peer client connections
 			* close server connections (or is that already handled)
 	*/
+	// stop client connection first before closing server connection
+	dpe.StopServer()
+}
+
+func (dpe *DistributedGrepEngine) StopServer() {
+	close(dpe.serverQuit)
+	err := dpe.listener.Close()
+	if err != nil {
+		log.Fatal("Failed to close server's listener object")
+	}
+	dpe.serverWg.Wait()
 }

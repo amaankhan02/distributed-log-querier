@@ -1,8 +1,10 @@
 package network
 
 import (
+	"bufio"
 	"encoding/binary"
 	"errors"
+	"io"
 	"net"
 )
 
@@ -35,31 +37,40 @@ func SendRequest(data []byte, conn net.Conn) error {
 Read request from connection. Reads the message size and correctly gets all the []byte of data
 and returns it. Caller is expected to deserialize this []byte of data as this function does not
 do that.
-*/
-func ReadRequest(conn net.Conn) ([]byte, error) {
-	size, err1 := readMessageSize(conn, MESSAGE_SIZE_BYTES)
-	if err1 != nil {
-		return nil, err1
-	}
-	buff := make([]byte, size)
 
-	_, err := conn.Read(buff)
+Returns an error of io.EOF or io.ErrUnexpectedEOF
+*/
+// TODO: change to use io.ReadFull() w/ bufio.Reader()
+// TODO: change to return and handle the error = io.EOF to know when we are done w/ the port to exit out? not sure...
+func ReadRequest(reader *bufio.Reader) ([]byte, error) {
+	data_size, err := readMessageSize(reader, MESSAGE_SIZE_BYTES)
+
 	if err != nil {
 		return nil, err
 	}
+	buff := make([]byte, data_size)
+
+	// ReadFull() reads exactly len(buff) bytes from reader into buff
+	// returns the number of bytes copied, and an error if fewer than len(buff) bytes were read
+	// the error is io.EOF only if no bytes were read. otherwise its an ErrUnexpectedEOF
+	_, err = io.ReadFull(reader, buff)
+	if err != nil { // fewer than len(buff) bytes were read, or none at all
+		return nil, err
+	}
+
 	return buff, nil
 }
 
 /*
 Helper function to read just the message size from the connection
 */
-func readMessageSize(conn net.Conn, messageSizeBytes int) (int, error) {
+func readMessageSize(reader *bufio.Reader, messageSizeBytes int) (int, error) {
 	if messageSizeBytes != 4 && messageSizeBytes != 8 {
 		return 0, errors.New("Invalid argument for messageSizeBytes - must be either equal to 4 or 8")
 	}
 
 	buff := make([]byte, messageSizeBytes)
-	_, err := conn.Read(buff)
+	_, err := io.ReadFull(reader, buff)
 	if err != nil {
 		return 0, err
 	}
