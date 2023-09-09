@@ -59,7 +59,7 @@ func main() {
 	engine.ConnectToPeers()
 
 	for {
-		utils.DisplayGrepPrompt()
+		utils.PrintMessage("Enter Grep command:")
 		rawInput, input_err := utils.ReadUserInput()
 
 		if rawInput == "exit" || input_err == io.EOF {

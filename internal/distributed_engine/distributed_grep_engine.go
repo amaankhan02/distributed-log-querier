@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/network"
+	"cs425_mp1/internal/utils"
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"os"
 	"sync"
 )
 
@@ -22,8 +22,6 @@ import (
 // the output. The Server is responsible for listening to all machines for any grep queries.
 // When a query is received from a peer, it executes the local query and sends back the output
 type DistributedGrepEngine struct {
-	// serverConns []net.Conn // server connections		// -> don't need this...
-	// server      *network.Server
 	listener   net.Listener // listener for the server
 	serverQuit chan interface{}
 	serverWg   sync.WaitGroup
@@ -33,7 +31,6 @@ type DistributedGrepEngine struct {
 	serverPort    string
 	peerAddresses []string
 	localLogFile  string
-	//isRunning     bool
 }
 
 /*
@@ -77,8 +74,6 @@ func (dpe *DistributedGrepEngine) InitializeServer() {
 	}
 	dpe.listener = l
 	dpe.serverWg.Add(1)
-
-	// dpe.isRunning = true
 	go dpe.serve()
 }
 
@@ -100,10 +95,12 @@ func (dpe *DistributedGrepEngine) serve() {
 			}
 		} else {
 			fmt.Println("Server connected to: ", conn.RemoteAddr())
+			connectionMsg := fmt.Sprintf("Server connected to: %s", conn.RemoteAddr())
+			utils.PrintMessage(connectionMsg)
 			dpe.serverWg.Add(1)
 			go func() {
+				defer dpe.serverWg.Done()
 				dpe.handleServerConnection(conn)
-				dpe.serverWg.Done()
 			}()
 		}
 	}
@@ -113,39 +110,34 @@ func (dpe *DistributedGrepEngine) serve() {
 func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	for {
-		// TODO: make sure ReadRequest() blocks
 		gQueryData, read_err := network.ReadRequest(reader)
-		if read_err == io.EOF {		// this server-client connection disconnected, so we can remove
-			log.Printf("\n**Client [%s] disconnected**\n", conn.RemoteAddr().String())
+		if read_err == io.EOF { // this server-client connection disconnected, so we can remove
+			msg := fmt.Sprintf("\n**Client [%s] disconnected**\n", conn.RemoteAddr().String())
+			// TODO: disconnect client here
+			dpe.removeClient(conn)
+			utils.PrintMessage(msg)
 			return
 		} else if read_err != nil {
-			log.Println("GOT OTHER ERROR IN HANDLESERVERCONNECTION()... WHAT TO DO HERE!!??") // TODO: HANDE THIS
+			log.Fatalf("Error while performing network.ReadRequest()!")
 			return
 		}
 
-		gQuery, err1 := grep.DeserializeGrepQuery(gQueryData)		// ! RETURNING A NULL OBJECT
+		gQuery, err1 := grep.DeserializeGrepQuery(gQueryData)
 		if err1 != nil {
 			log.Fatalf("Failed to Deserialize Grep Query: %v", err1)
 		}
 
-		// log.Printf("RECIEVED GREP QUERY: %s\n", gQuery.CmdArgs)
-
 		gOut := gQuery.Execute(dpe.localLogFile)
-
-		// log.Printf("EXECUTED GREP OUTPUT: %s\n", gOut.Output)
-
 		gOutData, err2 := grep.SerializeGrepOutput(gOut)
 		if err2 != nil {
 			log.Fatalf("Failed to Serialize Grep Output: %v", err2)
 		}
 		err := network.SendRequest(gOutData, conn)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
-			continue
+			log.Fatalf("*FAILED* to send Grep Output Data to %s", conn.RemoteAddr().String())
+			return // TODO: should I "return" or "continue"
 		}
-		// log.Printf("Sent %d bytes of serialized data", len(gOutData))
 	}
-	// TODO: how do i exit this function? Should probably have an exit feature in my program...
 }
 
 /*
@@ -156,7 +148,6 @@ Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
 func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
-	// TODO: change all NUM_MACHINES to be just the active connected machine not NUM_MACHINES since we don't know how many are connected
 	numPeerConnections := len(dpe.clientConns)
 	peerChannels := make([]chan *grep.GrepOutput, numPeerConnections)
 	localChannel := make(chan *grep.GrepOutput)
@@ -171,7 +162,7 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	for i := 0; i < numPeerConnections; i++ {
 		go dpe.remoteExecute(gquery, dpe.clientConns[i], peerChannels[i])
 	}
-	
+
 	// * NOTE: localExecute() and remoteExecute() will not exit until its respective channels are read from since the channels
 	// * once written to will block until someone reads from them. Therefore it will block until it is read from below
 
@@ -203,13 +194,11 @@ Parameters:
 	outputChannel: channel that remoteExecute() will send its grep output to
 */
 func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net.Conn, outputChannel chan *grep.GrepOutput) {
-	// fmt.Printf("gquery.cmdArgs: %s\n", gquery.CmdArgs)
-
 	gquery_data, ser_err := grep.SerializeGrepQuery(gquery)
 	if ser_err != nil {
 		log.Fatalf("Failed to serialized gquery data")
 	}
-	// fmt.Printf("Serialized gquery: %v\n", gquery_data)
+
 	err := network.SendRequest(gquery_data, conn)
 	if err != nil {
 		fmt.Printf("Failed to send gquery_data to %s\n", conn.RemoteAddr()) // TODO: how to handle this error?!
@@ -228,25 +217,18 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 	if err1 != nil {
 		log.Fatalf("Failed to Deserialize Grep Output: %v", err1)
 	}
-	// log.Printf("remoteExecute(): Received grepOutput from remote. Num Lines: %d\n", grepOutput.NumLines)
+
 	outputChannel <- grepOutput
 }
 
 func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputChannel chan *grep.GrepOutput) {
 	grepOutput := gquery.Execute(dpe.localLogFile)
-	// log.Printf("localExecute(): grepOutput Num Lines: %d\n", grepOutput.NumLines)
-	outputChannel <- grepOutput // TODO: is it fine to get the memory address of this var? is it stored on heap??
+	outputChannel <- grepOutput
 }
 
 func (dpe *DistributedGrepEngine) Shutdown() {
-
-	/*
-		TODO:
-			* close all peer client connections
-			* close server connections (or is that already handled)
-	*/
-	// stop client connection first before closing server connection
 	dpe.StopServer()
+	// TODO: anything else needed here?
 }
 
 func (dpe *DistributedGrepEngine) StopServer() {
@@ -256,4 +238,24 @@ func (dpe *DistributedGrepEngine) StopServer() {
 		log.Fatal("Failed to close server's listener object")
 	}
 	dpe.serverWg.Wait()
+}
+
+// When a client was disconnected, call this function to remove
+// the client information from the DistributedGrepEngine struct
+func (dpe *DistributedGrepEngine) removeClient(conn net.Conn) {
+	// Create a copy slice to set the dpe.clientConns to later
+	copyClients := make([]net.Conn, 0)
+	remIdx := -1
+	// first find the index of conn
+	for i, v := range dpe.clientConns {
+		if v == conn {
+			remIdx = i
+			break
+		}
+	}
+	if remIdx != -1 {
+		copyClients = append(dpe.clientConns[:remIdx], dpe.clientConns[remIdx+1:]...)
+		dpe.clientConns = copyClients
+		log.Println("Removed client from list")
+	}
 }
