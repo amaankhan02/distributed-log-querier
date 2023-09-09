@@ -14,7 +14,7 @@ const MESSAGE_SIZE_BYTES = 4 // number of bytes used in the protocol to define t
 Send request in the format
 Format: [size][data]
 
-	[size] is the size of the data represented in a binary format - 4 Byte little-endian
+	[size] is the size of the data represented in a binary format - 4 Byte big-endian
 	[data] is a []byte of the serialize GrepQuery/GrepOutput object gquery (use grep.SerializeGrepOutput())
 */
 func SendRequest(data []byte, conn net.Conn) error {
@@ -78,23 +78,23 @@ func readMessageSize(reader *bufio.Reader, messageSizeBytes int) (int, error) {
 	}
 
 	if messageSizeBytes == 4 {
-		return int(binary.LittleEndian.Uint32(buff)), nil
+		return int(binary.BigEndian.Uint32(buff)), nil
 	} else {
-		return int(binary.LittleEndian.Uint64(buff)), nil
+		return int(binary.BigEndian.Uint64(buff)), nil
 	}
 }
 
 /*
 Helper function to send just the message size as a MESSAGE_SIZE_BYTES number (like a 4byte number)
-in little-endian format
+in big-endian format
 */
 func sendMessageSize(base10Number int, conn net.Conn, messageSizeBytes int) error {
 	size := make([]byte, MESSAGE_SIZE_BYTES)
 	if messageSizeBytes == 4 {
-		binary.LittleEndian.PutUint32(size, uint32(base10Number))
+		binary.BigEndian.PutUint32(size, uint32(base10Number))
 		// fmt.Printf("base10Number: %d\nbinary number: %v\n", base10Number, size)
 	} else if messageSizeBytes == 8 {
-		binary.LittleEndian.PutUint64(size, uint64(base10Number))
+		binary.BigEndian.PutUint64(size, uint64(base10Number))
 	}
 
 	_, err := conn.Write(size) // _ is the number of bytes sent
