@@ -23,4 +23,5 @@ go.work
 venv/
 
 main
-*.log
+vm1.log
+vm2.log

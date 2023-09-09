@@ -127,7 +127,13 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 		if err1 != nil {
 			log.Fatalf("Failed to Deserialize Grep Query: %v", err1)
 		}
+
+		log.Printf("RECIEVED GREP QUERY: %s\n", gQuery.CmdArgs)
+
 		gOut := gQuery.Execute(dpe.localLogFile)
+
+		log.Printf("EXECUTED GREP OUTPUT: %s\n", gOut.Output)
+
 		gOutData, err2 := grep.SerializeGrepOutput(gOut)
 		if err2 != nil {
 			log.Fatalf("Failed to Serialize Grep Output: %v", err2)
