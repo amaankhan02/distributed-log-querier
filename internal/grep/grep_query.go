@@ -47,7 +47,7 @@ func SerializeGrepQuery(gquery *GrepQuery) ([]byte, error) {
 	
 	encoder := gob.NewEncoder(binary_buff)
 	err := encoder.Encode(gquery)
-	fmt.Printf("\n--------- SERIALIZE GREP QUERY ---------\nbinary_buff: %v\nbinary_buff.Bytes(): %v\n", binary_buff, binary_buff.Bytes())
+	// fmt.Printf("\n--------- SERIALIZE GREP QUERY ---------\nbinary_buff: %v\nbinary_buff.Bytes(): %v\n", binary_buff, binary_buff.Bytes())
 	if err != nil {
 		return nil, err
 	}
