@@ -4,49 +4,38 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"path/filepath"
 )
 
 // TODO: should any of these fields be pointers?
 type GrepOutput struct {
 	// variable names starting with lowercase indicates it's private access
-	output   string
-	filename string
-	numLines int
-}
-
-// Getter for numLines attribute
-func (g *GrepOutput) NumLines() int {
-	return g.numLines
-}
-
-// Getter for filename attribute
-func (g *GrepOutput) Filename() string {
-	return g.filename
-}
-
-// Getter for output attribute
-func (g *GrepOutput) Output() string {
-	return g.output
+	Output   string
+	Filename string
+	NumLines int
 }
 
 // Formats the contents of the GrepOutput as a string
 func (g *GrepOutput) ToString() string {
-	strFormat := "Filename: %s\nNumber of Lines: %d\nOutput:%s\n"
-	return fmt.Sprintf(strFormat, g.filename, g.numLines, g.output)
+	dashesWithFilename := "------------------------%s------------------------\n"
+	// dashes := "------------------------------------------------\n"
+	strFormat := dashesWithFilename + "Filename: %s\nNumber of Lines: %d\nOutput:\n%s\n"
+	baseFileName := filepath.Base(g.Filename)
+	return fmt.Sprintf(strFormat, baseFileName, baseFileName, g.NumLines, g.Output)
 }
 
 // SerializeGrepOutput Serialize GrepOutput object into a byte array
 // The returned format is good to send over a TCP socket
 // Returns nil if it failed to serialize
-func SerializeGrepOutput(grepOutput *GrepOutput) []byte {
+func SerializeGrepOutput(grepOutput *GrepOutput) ([]byte, error) {
 	binary_buff := new(bytes.Buffer)
 
 	encoder := gob.NewEncoder(binary_buff)
 	err := encoder.Encode(grepOutput)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return binary_buff.Bytes()
+	return binary_buff.Bytes(), nil
 }
 
 // DeserializeGrepOutput Deserializes the byte array into a GrepOutput object
@@ -58,15 +47,15 @@ func SerializeGrepOutput(grepOutput *GrepOutput) []byte {
 //
 //	Pointer to a GrepOutput struct allocated on the heap.
 //	nil if it failed to deserialized
-func DeserializeGrepOutput(data []byte) *GrepOutput {
+func DeserializeGrepOutput(data []byte) (*GrepOutput, error) {
 	grepOutput := new(GrepOutput)
 	byteBuffer := bytes.NewBuffer(data)
 	decoder := gob.NewDecoder(byteBuffer)
 
 	err := decoder.Decode(grepOutput)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return grepOutput
+	return grepOutput, nil
 }

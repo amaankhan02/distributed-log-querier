@@ -66,11 +66,6 @@ func ReadUserInput() (string, error) {
 	return userInput, nil
 }
 
-func DisplayGrepPrompt() {
-	fmt.Println("Enter grep command: ")
-	fmt.Print("$ ")
-}
-
 func GetLocalLogFile() string {
 	panic("Not implemented!")
 }
@@ -87,4 +82,10 @@ func PromptWait(message string) {
 			break
 		}
 	}
+}
+
+// Prints the message to the string followed by a new line and "$" symbol
+func PrintMessage(message string) {
+	fmt.Println(message)
+	fmt.Print("$ ")
 }
