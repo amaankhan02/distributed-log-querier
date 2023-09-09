@@ -72,6 +72,5 @@ func main() {
 			continue
 		}
 		engine.Execute(grepQuery)
-		log.Printf("Successfully executed engine.Execute()")
 	}
 }

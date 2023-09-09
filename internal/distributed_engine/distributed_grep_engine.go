@@ -178,13 +178,13 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	// Print local grep output to stdout
 	grepOut := <-localChannel
 	totalNumLines += grepOut.NumLines
-	fmt.Println(grepOut.ToString())
+	fmt.Print(grepOut.ToString())
 
 	// Print peer grep outputs to stdout
 	for i := 0; i < len(peerChannels); i++ {
 		grepOut := <-peerChannels[i] // read from channel into grep outputs array
 		totalNumLines += grepOut.NumLines
-		fmt.Println(grepOut.ToString())
+		fmt.Print(grepOut.ToString())
 	}
 
 	fmt.Printf("Total Number of Lines: %d\n", totalNumLines)

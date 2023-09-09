@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"path/filepath"
 )
 
 // TODO: should any of these fields be pointers?
@@ -16,8 +17,11 @@ type GrepOutput struct {
 
 // Formats the contents of the GrepOutput as a string
 func (g *GrepOutput) ToString() string {
-	strFormat := "Filename: %s\nNumber of Lines: %d\nOutput:%s\n"
-	return fmt.Sprintf(strFormat, g.Filename, g.NumLines, g.Output)
+	dashesWithFilename := "------------------------%s------------------------\n"
+	// dashes := "------------------------------------------------\n"
+	strFormat := dashesWithFilename + "Filename: %s\nNumber of Lines: %d\nOutput:\n%s\n"
+	baseFileName := filepath.Base(g.Filename)
+	return fmt.Sprintf(strFormat, baseFileName, baseFileName, g.NumLines, g.Output)
 }
 
 // SerializeGrepOutput Serialize GrepOutput object into a byte array
