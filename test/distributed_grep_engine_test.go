@@ -35,7 +35,7 @@ func TestCreatingJson(t *testing.T) {
 
 	outputs := []grep.GrepOutput{grepOut1, grepOut2, grepOut3}
 
-	engine := distributed_engine.CreateEngine("test", "8080", nil, 0, false, "test%d.json")
+	engine := distributed_engine.CreateEngine("test", "8080", nil, 20, false, "test%d.json")
 	_, err := engine.CreateJson(packagedString, outputs)
 
 	if err != nil {
@@ -70,7 +70,8 @@ When this function is ran, we assume that the other VMs have already have their 
 the [r] keyword already pressed to indicate
 */
 func TestExecuteSmall(t *testing.T) {
-	cmd := exec.Command("./main", "-n", "3", "-f", "test_logs/test_log_file1.log", "-t")
+	cmdArgs := []string{"-n", "3", "-f", "test_logs/test_log_file1.log", "-t"}
+	cmd := exec.Command("./main", cmdArgs...)
 	cmd.Stdin = strings.NewReader("r\ngrep -c ERROR\nexit\n")
 	err := cmd.Run()
 	if err != nil {
