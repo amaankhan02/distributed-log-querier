@@ -113,8 +113,9 @@ func ProcessInput() (string, error) {
 func SetupEngine() {
 	_, _ = fmt.Fprintln(os.Stderr, "Setting up server. Listening to new connections...")
 	engine.InitializeServer()
-	utils.PromptWait("Wait for all machines to initialize and setup server") // prompting user to wait
+	//utils.PromptWait("Wait for all machines to initialize and setup server") // prompting user to wait
 	engine.ConnectToPeers()
+	_, _ = fmt.Fprintln(os.Stderr, "Connected to all machines")
 }
 
 func main() {

@@ -83,14 +83,21 @@ func (dpe *DistributedGrepEngine) ConnectToPeers() {
 
 	// connect to each server's ipAddress (acting as client - connecting to the servers)
 	for _, peerServerAddr := range dpe.peerAddresses {
-		conn, err := net.Dial("tcp", peerServerAddr) // conn = client connection object
-		if err != nil {
-			fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
-			continue
+		didConnect := false
+		for !didConnect {
+			conn, err := net.Dial("tcp", peerServerAddr) // conn = client connection object
+			if err == nil {                              // successfully connected
+				//fmt.Printf("Error connecting to %s: %v\n", peerServerAddr, err)
+				//continue
+				dpe.clientConns = append(dpe.clientConns, conn)
+				dpe.activeClients[generateClientConnKey(conn)] = true
+				dpe.numActiveClients += 1
+				didConnect = true
+			} else {
+				time.Sleep(125 * time.Millisecond) // wait 0.125 seconds before trying again to connect
+			}
 		}
-		dpe.clientConns = append(dpe.clientConns, conn)
-		dpe.activeClients[generateClientConnKey(conn)] = true
-		dpe.numActiveClients += 1
+
 	}
 }
 
