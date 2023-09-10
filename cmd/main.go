@@ -29,7 +29,9 @@ var verbose *bool
 var peerServerAddresses []string
 var engine *distributed_engine.DistributedGrepEngine
 var serverPort string
-var isTest *bool
+
+// var isTest *bool
+var testDir *string
 
 //var readFromFile bool
 //var scanner *bufio.Scanner
@@ -39,7 +41,7 @@ func ParseArguments() {
 	filename := flag.String("f", "", "Filename of the log file")
 	cacheSize = flag.Int("c", 10, "Size of the in-memory LRU cache")
 	verbose = flag.Bool("v", false, "Indicates if you want messages to be printed out")
-	isTest = flag.Bool("t", false, "True or False indicating if this is for testing")
+	testDir = flag.String("t", "", "If you wish to run this program in TEST mode, put the directory you want your output JSON files to be stored")
 	//inputFile = flag.String("t", "", "Used for unit testing. Input file for reading grep queries instead of stdin")
 	flag.Parse()
 
@@ -69,8 +71,10 @@ func Init() {
 
 	peerServerAddresses = utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
 	serverPort = utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
-	if *isTest {
-		engine = distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize, *verbose, OUTPUT_JSON_FORMAT)
+	if *testDir != "" {
+		_, _ = fmt.Fprintf(os.Stderr, "Opening in [TEST] mode. Saving test output JSON files to %s\n", *testDir)
+		dirPlusFile := filepath.Join(*testDir, OUTPUT_JSON_FORMAT)
+		engine = distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize, *verbose, dirPlusFile)
 	} else {
 		engine = distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize, *verbose, "")
 	}
