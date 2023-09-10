@@ -211,7 +211,7 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	}
 
 	// * NOTE: localExecute() and remoteExecute() will not exit until its respective channels are read from since the channels
-	// * once written to will block until someone reads from them. Therefore it will block until it is read from below
+	// * once written to will block until someone reads from them. Therefore, it will block until it is read from below
 
 	// Print local grep output to stdout
 	grepOut := <-localChannel
@@ -225,7 +225,7 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 		fmt.Print(grepOut.ToString())
 	}
 
-	fmt.Printf("Total Number of Lines: %d\n", totalNumLines)
+	fmt.Printf("Total Number of Lines: %d\n\n", totalNumLines)
 }
 
 /*
@@ -279,7 +279,10 @@ func (dpe *DistributedGrepEngine) Shutdown() {
 }
 
 func (dpe *DistributedGrepEngine) StopServer() {
-	close(dpe.serverQuit)
+	if dpe.serverQuit != nil {
+		close(dpe.serverQuit)
+	}
+
 	err := dpe.listener.Close()
 	if err != nil {
 		log.Fatal("Failed to close server's listener object")
