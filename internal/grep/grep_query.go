@@ -110,30 +110,31 @@ func parseRawGrepQuery(userInput string) ([]string, error) {
 // Helper function to be used in ParseRawGrepQuery
 // loop through and see if any of the command arguments start with quotations " or ' & handle that
 func handleExtraQuotes(cmdArgs []string) []string {
-	result_grep_query := []string{}
-	modified_cmd := ""
+	resultGrepQuery := []string{}
+	modifiedCmd := ""
 
 	for _, cmd := range cmdArgs {
 
 		if strings.HasPrefix(cmd, `"`) && strings.HasSuffix(cmd, `"`) {
 
 			cmd = strings.Trim(cmd, `"`)
-			result_grep_query = append(result_grep_query, cmd)
+			resultGrepQuery = append(resultGrepQuery, cmd)
 		} else {
 
 			if strings.HasPrefix(cmd, `"`) {
-				modified_cmd = cmd
+				modifiedCmd = cmd
 			} else if strings.HasSuffix(cmd, `"`) {
-				modified_cmd += " " + cmd
-				result_grep_query = append(result_grep_query, strings.Trim(modified_cmd, `"`))
-				modified_cmd = ""
-			} else if modified_cmd != "" {
-				modified_cmd = modified_cmd + " " + cmd
+				modifiedCmd = modifiedCmd + " " + cmd
+				trimmedCmd := strings.Trim(modifiedCmd, `"`)
+				resultGrepQuery = append(resultGrepQuery, trimmedCmd)
+				modifiedCmd = ""
+			} else if modifiedCmd != "" {
+				modifiedCmd = modifiedCmd + " " + cmd
 			} else {
-				result_grep_query = append(result_grep_query, cmd)
+				resultGrepQuery = append(resultGrepQuery, cmd)
 			}
 		}
 	}
 
-	return result_grep_query
+	return resultGrepQuery
 }

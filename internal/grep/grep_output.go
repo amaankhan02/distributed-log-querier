@@ -58,3 +58,11 @@ func DeserializeGrepOutput(data []byte) (*GrepOutput, error) {
 
 	return grepOutput, nil
 }
+
+func GrepOutputsAreEqual(grepOutput1 *GrepOutput, grepOutput2 *GrepOutput) bool {
+	if grepOutput1.Output == grepOutput2.Output && grepOutput1.NumLines == grepOutput2.NumLines && grepOutput1.Filename == grepOutput2.Filename {
+		return true
+	} else {
+		return false
+	}
+}
