@@ -191,10 +191,10 @@ func TestExecuteComplexRegEx1(t *testing.T) {
 }
 
 func TestExecuteComplexRegEx2(t *testing.T) {
-	var expectedOutput = "ERROR: Internal server error: Unable to process request\nERROR: File not found: 'file.txt'\n"
-	var expectedNumLines = 2
+	var expectedOutput = "WARNING: Invalid input detected\nWARNING: Network connection unstable\nERROR: Internal server error: Unable to process request\nWARNING: File deletion warning, 'temp.txt' will be removed\nWARNING: Invalid input detected\nWARNING: Configuration file outdated, please update\nWARNING: Invalid input detected\nWARNING: SSL certificate expiration warning, renew needed\nWARNING: SSL certificate expiration warning, renew needed\nERROR: File not found: 'file.txt'\n"
+	var expectedNumLines = 10
 
-	q, err := grep.CreateGrepQueryFromInput("grep ^[eE]")
+	q, err := grep.CreateGrepQueryFromInput("grep -E ^[eE]|^W")
 
 	if err != nil {
 		t.Errorf("Error: %v", err)
@@ -217,8 +217,8 @@ func TestExecuteComplexRegEx2(t *testing.T) {
 }
 
 func TestExecuteComplexRegEx3(t *testing.T) {
-	var expectedOutput = "ERROR: Internal server error: Unable to process request\nERROR: File not found: 'file.txt'\n"
-	var expectedNumLines = 2
+	var expectedOutput = "WARNING: Invalid input detected\nWARNING: Network connection unstable\nINFO: API version 1.2.3 is now deprecated\nERROR: Internal server error: Unable to process request\nWARNING: File deletion warning, 'temp.txt' will be removed\nWARNING: Invalid input detected\nWARNING: Configuration file outdated, please update\nINFO: Database initialized successfully\nINFO: Application started\nWARNING: Invalid input detected\nWARNING: SSL certificate expiration warning, renew needed\nWARNING: SSL certificate expiration warning, renew needed\nINFO: Scheduled maintenance task started\nINFO: Received 200 OK response from API endpoint"
+	var expectedNumLines = 14
 
 	q, err := grep.CreateGrepQueryFromInput("grep -e ^[F-Z] -e request$")
 
@@ -265,5 +265,34 @@ func TestExecuteComplexRegEx4(t *testing.T) {
 
 	if output != expectedOutput {
 		t.Errorf("Expected output: %s, but got %s", expectedOutput, output)
+	}
+}
+
+func TestSerializeDeserializeQuery(t *testing.T) {
+	gQuery := grep.GrepQuery{
+		CmdArgs:        []string{"grep", "sample", "example_file_name.txt"},
+		PackagedString: "grep;sample;example_file_name.txt",
+	}
+
+	gQueryBytes, err := grep.SerializeGrepQuery(&gQuery)
+
+	if err != nil {
+		t.Errorf("Error thrown in serializing Grep Query: %s", err)
+	}
+
+	gQueryDeserialized, err := grep.DeserializeGrepQuery(gQueryBytes)
+
+	if gQuery.PackagedString != gQueryDeserialized.PackagedString {
+		t.Errorf("Expected package string %s, but got %s", gQuery.PackagedString, gQueryDeserialized.PackagedString)
+	} else {
+
+		if len(gQuery.CmdArgs) != len(gQueryDeserialized.CmdArgs) {
+			t.Errorf("Expected length of cmdArgs %d, but got %d", len(gQuery.CmdArgs), len(gQueryDeserialized.CmdArgs))
+		}
+		for i, cmd := range gQuery.CmdArgs {
+			if cmd != gQueryDeserialized.CmdArgs[i] {
+				t.Errorf("Expected cmd %s, but got %s", cmd, gQueryDeserialized.CmdArgs)
+			}
+		}
 	}
 }
