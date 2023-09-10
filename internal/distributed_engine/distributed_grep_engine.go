@@ -40,6 +40,13 @@ type DistributedGrepEngine struct {
 	verbose bool
 }
 
+type JSONOutput struct {
+	query   string            // packaged string of the grep query
+	outputs []grep.GrepOutput // list of grep_outputs, each grep_output in this list is from a different vm
+}
+
+// you want to essentially create a list of these to store in JSON file
+
 /*
 Creates a DistributedGrepEngine struct and initializes with default values
 */
