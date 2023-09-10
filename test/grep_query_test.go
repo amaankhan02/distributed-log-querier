@@ -217,7 +217,7 @@ func TestExecuteComplexRegEx2(t *testing.T) {
 }
 
 func TestExecuteComplexRegEx3(t *testing.T) {
-	var expectedOutput = "WARNING: Invalid input detected\nWARNING: Network connection unstable\nINFO: API version 1.2.3 is now deprecated\nERROR: Internal server error: Unable to process request\nWARNING: File deletion warning, 'temp.txt' will be removed\nWARNING: Invalid input detected\nWARNING: Configuration file outdated, please update\nINFO: Database initialized successfully\nINFO: Application started\nWARNING: Invalid input detected\nWARNING: SSL certificate expiration warning, renew needed\nWARNING: SSL certificate expiration warning, renew needed\nINFO: Scheduled maintenance task started\nINFO: Received 200 OK response from API endpoint"
+	var expectedOutput = "WARNING: Invalid input detected\nWARNING: Network connection unstable\nINFO: API version 1.2.3 is now deprecated\nERROR: Internal server error: Unable to process request\nWARNING: File deletion warning, 'temp.txt' will be removed\nWARNING: Invalid input detected\nWARNING: Configuration file outdated, please update\nINFO: Database initialized successfully\nINFO: Application started\nWARNING: Invalid input detected\nWARNING: SSL certificate expiration warning, renew needed\nWARNING: SSL certificate expiration warning, renew needed\nINFO: Scheduled maintenance task started\nINFO: Received 200 OK response from API endpoint\n"
 	var expectedNumLines = 14
 
 	q, err := grep.CreateGrepQueryFromInput("grep -e ^[F-Z] -e request$")

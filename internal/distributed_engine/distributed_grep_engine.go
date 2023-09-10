@@ -5,11 +5,13 @@ import (
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/network"
 	"cs425_mp1/internal/utils"
+	"encoding/json"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru"
 	"io"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
@@ -41,8 +43,8 @@ type DistributedGrepEngine struct {
 }
 
 type JSONOutput struct {
-	query   string            // packaged string of the grep query
-	outputs []grep.GrepOutput // list of grep_outputs, each grep_output in this list is from a different vm
+	Query   string            // packaged string of the grep query
+	Outputs []grep.GrepOutput // list of grep_outputs, each grep_output in this list is from a different vm
 }
 
 // you want to essentially create a list of these to store in JSON file
@@ -196,6 +198,8 @@ Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
 func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
+	var outputsJson []grep.GrepOutput
+
 	start := time.Now()
 	numTotalPeerConnections := len(dpe.clientConns)
 	localChannel := make(chan *grep.GrepOutput)
@@ -224,18 +228,61 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	// Print local grep output to stdout
 	grepOut := <-localChannel
 	totalNumLines += grepOut.NumLines
+
+	outputsJson = append(outputsJson, *grepOut)
 	fmt.Print(grepOut.ToString())
 
 	// Print peer grep outputs to stdout
 	for i := 0; i < len(peerChannels); i++ {
 		grepOut := <-peerChannels[i] // read from channel into grep outputs array
 		totalNumLines += grepOut.NumLines
+
+		outputsJson = append(outputsJson, *grepOut)
 		fmt.Print(grepOut.ToString())
 	}
+
 	end := time.Now()
+
+	_, err := CreateJson(gquery.PackagedString, outputsJson)
+
+	if err != nil {
+		fmt.Println("Error in creating json file ")
+	}
+
 	elapsed := end.Sub(start)
 	fmt.Printf("Total Number of Lines: %d\n", totalNumLines)
 	fmt.Printf("Elapsed Query Execution Time: %dns\n\n", elapsed.Nanoseconds())
+}
+
+func CreateJson(packagedString string, outputsJson []grep.GrepOutput) ([]byte, error) {
+	data := JSONOutput{
+		Query:   packagedString,
+		Outputs: outputsJson,
+	}
+
+	dataBytes, err := json.MarshalIndent(data, "", " ")
+
+	if err != nil {
+		fmt.Println("Error writing to file using json.Marshal")
+	}
+
+	err = os.WriteFile(packagedString+"jsonFile.json", dataBytes, os.FileMode(0644))
+	if err != nil {
+		fmt.Println("Error in Writing Creating Json file")
+	}
+
+	return dataBytes, err
+}
+
+func DeserializeJson(dataBytes []byte) (string, []grep.GrepOutput) {
+	var jsonOutput JSONOutput
+	err := json.Unmarshal(dataBytes, &jsonOutput)
+
+	if err != nil {
+		fmt.Println("Error in deserializing json file")
+	}
+
+	return jsonOutput.Query, jsonOutput.Outputs
 }
 
 /*
