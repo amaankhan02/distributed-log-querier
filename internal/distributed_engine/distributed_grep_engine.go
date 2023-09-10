@@ -196,6 +196,7 @@ Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
 func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
+	start := time.Now()
 	numTotalPeerConnections := len(dpe.clientConns)
 	localChannel := make(chan *grep.GrepOutput)
 	var totalNumLines int
@@ -231,8 +232,10 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 		totalNumLines += grepOut.NumLines
 		fmt.Print(grepOut.ToString())
 	}
-
-	fmt.Printf("Total Number of Lines: %d\n\n", totalNumLines)
+	end := time.Now()
+	elapsed := end.Sub(start)
+	fmt.Printf("Total Number of Lines: %d\n", totalNumLines)
+	fmt.Printf("Elapsed Query Execution Time: %dns\n\n", elapsed.Nanoseconds())
 }
 
 /*
