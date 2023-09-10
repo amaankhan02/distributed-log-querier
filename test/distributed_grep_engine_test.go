@@ -3,6 +3,9 @@ package test
 import (
 	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
+	"log"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 )
@@ -30,13 +33,15 @@ func TestCreatingJson(t *testing.T) {
 	grepOut3 := grep.GrepOutput{output3, filename3, numLines3, exectionTime3}
 
 	outputs := []grep.GrepOutput{grepOut1, grepOut2, grepOut3}
-	dataBytes, err := distributed_engine.CreateJson(packagedString, outputs)
+
+	engine := distributed_engine.CreateEngine("test", "8080", nil, 0, false, "test%d.json")
+	_, err := engine.CreateJson(packagedString, outputs)
 
 	if err != nil {
 		t.Errorf("Failed to Create Json file")
 	}
 
-	query, outputs := distributed_engine.DeserializeJson(dataBytes)
+	query, outputs := distributed_engine.DeserializeJson("test1.json")
 
 	if query != packagedString {
 		t.Errorf("Expected query %s but got %s", packagedString, query)
@@ -56,5 +61,29 @@ func TestCreatingJson(t *testing.T) {
 
 	if !grep.GrepOutputsAreEqual(&outputs[2], &grepOut3) {
 		t.Errorf("Expected grepOutput does not match output")
+	}
+}
+
+/*
+When this function is ran, we assume that the other VMs have already have their programs running, with
+the [r] keyword already pressed to indicate
+*/
+func TestExecuteSmall(t *testing.T) {
+	cmd := exec.Command("./main", "-n", "3", "-f", "test_logs/test_log_file1.log", "-t")
+	cmd.Stdin = strings.NewReader("r\ngrep -c ERROR\nexit\n")
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// read open the json file it outputted
+	query, grepOutputs := distributed_engine.DeserializeJson("test1.json")
+
+	if query != "grep -c ERROR" {
+		t.Error("Expected query does not match")
+	}
+
+	for i, gOut := range grepOutputs {
+		// TODO: add this in later
 	}
 }

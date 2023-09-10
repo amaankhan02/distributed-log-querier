@@ -32,14 +32,16 @@ type DistributedGrepEngine struct {
 	activeClients    map[string]bool // key = addr of client, value = True if connection is active. False if disconnected
 	numActiveClients int
 
-	serverPort    string
-	peerAddresses []string
-	localLogFile  string
+	serverPort               string
+	peerAddresses            []string
+	localLogFile             string
+	testOutputFileNameFormat string
 
 	lruCache                *lru.Cache
 	cacheInitalizationError error
 
-	verbose bool
+	verbose            bool
+	currentTestFileIdx int
 }
 
 type JSONOutput struct {
@@ -52,7 +54,7 @@ type JSONOutput struct {
 /*
 Creates a DistributedGrepEngine struct and initializes with default values
 */
-func CreateEngine(localLogFile string, serverPort string, peerAddresses []string, cacheSize int, verbose bool) *DistributedGrepEngine {
+func CreateEngine(localLogFile string, serverPort string, peerAddresses []string, cacheSize int, verbose bool, testOutputFileNameFormat string) *DistributedGrepEngine {
 	// initialize server and client connections here
 
 	// initialize cache
@@ -62,6 +64,8 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 	dpe.peerAddresses = peerAddresses
 	dpe.activeClients = make(map[string]bool)
 	dpe.verbose = verbose
+	dpe.testOutputFileNameFormat = testOutputFileNameFormat
+	dpe.currentTestFileIdx = 1
 
 	dpe.lruCache, dpe.cacheInitalizationError = lru.New(cacheSize)
 	if dpe.cacheInitalizationError != nil {
@@ -198,7 +202,7 @@ Prints the output from each machine to stdout in a nice formatted manner
 Additionally prints the total number of lines at the end
 */
 func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
-	var outputsJson []grep.GrepOutput
+	var outputsJson = make([]grep.GrepOutput, 0)
 
 	start := time.Now()
 	numTotalPeerConnections := len(dpe.clientConns)
@@ -243,10 +247,11 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 
 	end := time.Now()
 
-	_, err := CreateJson(gquery.PackagedString, outputsJson)
-
-	if err != nil {
-		fmt.Println("Error in creating json file ")
+	if dpe.testOutputFileNameFormat != "" {
+		_, err := dpe.CreateJson(gquery.PackagedString, outputsJson)
+		if err != nil {
+			fmt.Println("Error in creating json file ")
+		}
 	}
 
 	elapsed := end.Sub(start)
@@ -254,7 +259,7 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 	fmt.Printf("Elapsed Query Execution Time: %dns\n\n", elapsed.Nanoseconds())
 }
 
-func CreateJson(packagedString string, outputsJson []grep.GrepOutput) ([]byte, error) {
+func (dpe *DistributedGrepEngine) CreateJson(packagedString string, outputsJson []grep.GrepOutput) ([]byte, error) {
 	data := JSONOutput{
 		Query:   packagedString,
 		Outputs: outputsJson,
@@ -265,8 +270,9 @@ func CreateJson(packagedString string, outputsJson []grep.GrepOutput) ([]byte, e
 	if err != nil {
 		fmt.Println("Error writing to file using json.Marshal")
 	}
-
-	err = os.WriteFile(packagedString+"jsonFile.json", dataBytes, os.FileMode(0644))
+	filename := fmt.Sprintf(dpe.testOutputFileNameFormat, dpe.currentTestFileIdx)
+	dpe.currentTestFileIdx += 1
+	err = os.WriteFile(filename, dataBytes, os.FileMode(0644))
 	if err != nil {
 		fmt.Println("Error in Writing Creating Json file")
 	}
@@ -274,12 +280,22 @@ func CreateJson(packagedString string, outputsJson []grep.GrepOutput) ([]byte, e
 	return dataBytes, err
 }
 
-func DeserializeJson(dataBytes []byte) (string, []grep.GrepOutput) {
-	var jsonOutput JSONOutput
-	err := json.Unmarshal(dataBytes, &jsonOutput)
-
+func DeserializeJson(jsonFileName string) (string, []grep.GrepOutput) {
+	jsonFile, err := os.Open(jsonFileName)
 	if err != nil {
-		fmt.Println("Error in deserializing json file")
+		log.Fatalf("Failed to open json file")
+	}
+	defer func(jsonFile *os.File) {
+		_ = jsonFile.Close()
+	}(jsonFile)
+
+	dataBytes, _ := io.ReadAll(jsonFile)
+
+	var jsonOutput JSONOutput
+	err2 := json.Unmarshal(dataBytes, &jsonOutput)
+
+	if err2 != nil {
+		log.Fatalf("Error in deserializing json file")
 	}
 
 	return jsonOutput.Query, jsonOutput.Outputs
