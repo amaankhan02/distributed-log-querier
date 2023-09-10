@@ -18,7 +18,7 @@ type GrepOutput struct {
 // Formats the contents of the GrepOutput as a string
 func (g *GrepOutput) ToString() string {
 	//dashesWithFilename := "------------------------%s------------------------\n"
-	strFormat := "Filename: %s\nNum Lines: %d\nExecution Time: %gns\nOutput:\n%s\n"
+	strFormat := "Filename: %s\nNum Lines: %d\nExecution Time: %dns\nOutput:\n%s\n"
 	baseFileName := filepath.Base(g.Filename)
 	return fmt.Sprintf(strFormat, baseFileName, g.NumLines, g.ExecutionTime.Nanoseconds(), g.Output)
 }
