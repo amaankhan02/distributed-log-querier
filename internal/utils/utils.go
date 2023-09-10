@@ -73,10 +73,10 @@ func GetLocalLogFile() string {
 // Prompts user to wait by displaying the "message" to stdout, and waits for user
 // to type in "r" for continue. Anything else will simply display the prompt again
 func PromptWait(message string) {
-	fmt.Println(message)
+	_, _ = fmt.Fprintln(os.Stderr, message)
 
 	for {
-		fmt.Println("Type [r] when you are ready to continue (w/o brackets)")
+		_, _ = fmt.Fprintln(os.Stderr, "Type [r] when you are ready to continue (w/o brackets)")
 		input, _ := ReadUserInput()
 		if input == "r" {
 			break
@@ -85,7 +85,9 @@ func PromptWait(message string) {
 }
 
 // Prints the message to the string followed by a new line and "$" symbol
-func PrintMessage(message string) {
-	fmt.Println(message)
-	fmt.Print("$ ")
+func PrintMessage(message string, verboseFlag bool) {
+	if verboseFlag {
+		fmt.Println(message)
+		fmt.Print("$ ")
+	}
 }

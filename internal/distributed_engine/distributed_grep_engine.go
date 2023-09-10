@@ -36,12 +36,14 @@ type DistributedGrepEngine struct {
 
 	lruCache                *lru.Cache
 	cacheInitalizationError error
+
+	verbose bool
 }
 
 /*
 Creates a DistributedGrepEngine struct and initializes with default values
 */
-func CreateEngine(localLogFile string, serverPort string, peerAddresses []string, cacheSize int) *DistributedGrepEngine {
+func CreateEngine(localLogFile string, serverPort string, peerAddresses []string, cacheSize int, verbose bool) *DistributedGrepEngine {
 	// initialize server and client connections here
 
 	// initialize cache
@@ -50,6 +52,7 @@ func CreateEngine(localLogFile string, serverPort string, peerAddresses []string
 	dpe.serverPort = serverPort
 	dpe.peerAddresses = peerAddresses
 	dpe.activeClients = make(map[string]bool)
+	dpe.verbose = verbose
 
 	dpe.lruCache, dpe.cacheInitalizationError = lru.New(cacheSize)
 	if dpe.cacheInitalizationError != nil {
@@ -107,7 +110,7 @@ func (dpe *DistributedGrepEngine) serve() {
 			}
 		} else {
 			connectionMsg := fmt.Sprintf("Server connected to: %s", conn.RemoteAddr())
-			utils.PrintMessage(connectionMsg)
+			utils.PrintMessage(connectionMsg, dpe.verbose)
 			dpe.serverWg.Add(1)
 			go func() {
 				defer dpe.serverWg.Done()
@@ -125,7 +128,7 @@ func (dpe *DistributedGrepEngine) handleServerConnection(conn net.Conn) {
 		if read_err == io.EOF { // this server-client connection disconnected, so we can remove
 			msg := fmt.Sprintf("\n**Client [%s] disconnected**\n", conn.RemoteAddr().String())
 			dpe.removeClient(conn)
-			utils.PrintMessage(msg)
+			utils.PrintMessage(msg, dpe.verbose)
 			return
 		} else if read_err != nil {
 			log.Fatalf("Error while performing network.ReadRequest()!")

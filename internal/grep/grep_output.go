@@ -8,9 +8,7 @@ import (
 	"time"
 )
 
-// TODO: should any of these fields be pointers?
 type GrepOutput struct {
-	// variable names starting with lowercase indicates it's private access
 	Output        string
 	Filename      string
 	NumLines      int
@@ -19,11 +17,10 @@ type GrepOutput struct {
 
 // Formats the contents of the GrepOutput as a string
 func (g *GrepOutput) ToString() string {
-	dashesWithFilename := "------------------------%s------------------------\n"
-	// dashes := "------------------------------------------------\n"
-	strFormat := dashesWithFilename + "Filename: %s\nNumber of Lines: %d\nExecution Time: %d\nOutput:\n%s\n"
+	//dashesWithFilename := "------------------------%s------------------------\n"
+	strFormat := "Filename: %s\nNumber of Lines: %d\nExecution Time: %d\nOutput:\n%s\n"
 	baseFileName := filepath.Base(g.Filename)
-	return fmt.Sprintf(strFormat, baseFileName, baseFileName, g.NumLines, g.ExecutionTime.String(), g.Output)
+	return fmt.Sprintf(strFormat, baseFileName, g.NumLines, g.ExecutionTime.String(), g.Output)
 }
 
 // SerializeGrepOutput Serialize GrepOutput object into a byte array
