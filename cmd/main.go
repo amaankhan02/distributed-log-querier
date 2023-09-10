@@ -26,7 +26,7 @@ var verbose *bool
 func ParseArguments() {
 	flagNumMachines = flag.Int("n", 10, "Number of Machines in the network in the range [2, 10]")
 	filename := flag.String("f", "", "Filename of the log file")
-	cacheSize = flag.Int("c", 20, "Size of the in-memory LRU cache")
+	cacheSize = flag.Int("c", 10, "Size of the in-memory LRU cache")
 	verbose = flag.Bool("v", false, "Indicates if you want messages to be printed out")
 	flag.Parse()
 
