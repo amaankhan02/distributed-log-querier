@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
 	"cs425_mp1/internal/utils"
@@ -13,7 +12,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const (
@@ -26,19 +24,23 @@ var flagNumMachines *int
 var localLogFile *string // full path of the local log file of this machine
 var cacheSize *int
 var verbose *bool
-var inputFile *string // used for testing --> reads from input file instead of stdin
+
+// var inputFile *string // used for testing --> reads from input file instead of stdin
 var peerServerAddresses []string
 var engine *distributed_engine.DistributedGrepEngine
 var serverPort string
-var readFromFile bool
-var scanner *bufio.Scanner
+var isTest *bool
+
+//var readFromFile bool
+//var scanner *bufio.Scanner
 
 func ParseArguments() {
 	flagNumMachines = flag.Int("n", 10, "Number of Machines in the network in the range [2, 10]")
 	filename := flag.String("f", "", "Filename of the log file")
 	cacheSize = flag.Int("c", 10, "Size of the in-memory LRU cache")
 	verbose = flag.Bool("v", false, "Indicates if you want messages to be printed out")
-	_input_filename := flag.String("t", "", "Used for unit testing. Input file for reading grep queries instead of stdin")
+	isTest = flag.Bool("t", false, "True or False indicating if this is for testing")
+	//inputFile = flag.String("t", "", "Used for unit testing. Input file for reading grep queries instead of stdin")
 	flag.Parse()
 
 	// convert filename to a full path for the localLogFile variable
@@ -49,15 +51,15 @@ func ParseArguments() {
 	localLogFile = &fullPath
 
 	// convert inputFile to a full path for the
-	if *_input_filename != "" {
-		fullInputFile, err2 := filepath.Abs(*_input_filename)
-		if err2 != nil {
-			log.Fatal("Invalid file for input file flag")
-		}
-		inputFile = &fullInputFile
-	} else {
-		inputFile = _input_filename
-	}
+	//if *_input_filename != "" {
+	//	fullInputFile, err2 := filepath.Abs(*_input_filename)
+	//	if err2 != nil {
+	//		log.Fatal("Invalid file for input file flag")
+	//	}
+	//	inputFile = &fullInputFile
+	//} else {
+	//	inputFile = _input_filename
+	//}
 
 }
 
@@ -67,44 +69,44 @@ func Init() {
 
 	peerServerAddresses = utils.GetPeerServerAddresses(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
 	serverPort = utils.GetLocalhostPort(MACHINE_NAME_FORMAT, PORT_FORMAT, *flagNumMachines)
-	if *inputFile == "" {
-		engine = distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize, *verbose, "")
-	} else {
+	if *isTest {
 		engine = distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize, *verbose, OUTPUT_JSON_FORMAT)
+	} else {
+		engine = distributed_engine.CreateEngine(*localLogFile, serverPort, peerServerAddresses, *cacheSize, *verbose, "")
 	}
 
-	if *localLogFile == "" {
-		readFromFile = false
-	} else {
-		readFromFile = true
-		file, errf := os.Open(*inputFile)
-		if errf != nil {
-			log.Fatal("Error optning input file")
-		}
-		defer func(file *os.File) {
-			_ = file.Close()
-		}(file)
-		scanner = bufio.NewScanner(file)
-	}
+	//if *localLogFile == "" {
+	//	readFromFile = false
+	//} else {
+	//	readFromFile = true
+	//	file, errf := os.Open(*inputFile)
+	//	if errf != nil {
+	//		log.Fatal("Error optning input file")
+	//	}
+	//	defer func(file *os.File) {
+	//		_ = file.Close()
+	//	}(file)
+	//	scanner = bufio.NewScanner(file)
+	//}
 }
 
 func ProcessInput() (string, error) {
 	var inputStr string
-	if readFromFile {
-		utils.PrintMessage("Enter Grep command:", *verbose)
-		rawInput, input_err := utils.ReadUserInput()
-		if rawInput == "exit" || input_err == io.EOF {
-			return "", errors.New("Break")
-		}
-		inputStr = rawInput
-	} else {
-		canScan := scanner.Scan()
-		if !canScan {
-			return "", errors.New("Break")
-		} else {
-			inputStr = strings.TrimSpace(scanner.Text())
-		}
+	//if readFromFile {
+	utils.PrintMessage("Enter Grep command:", *verbose)
+	rawInput, input_err := utils.ReadUserInput()
+	if rawInput == "exit" || input_err == io.EOF {
+		return "", errors.New("Break")
 	}
+	inputStr = rawInput
+	//} else {
+	//	canScan := scanner.Scan()
+	//	if !canScan {
+	//		return "", errors.New("Break")
+	//	} else {
+	//		inputStr = strings.TrimSpace(scanner.Text())
+	//	}
+	//}
 	return inputStr, nil
 }
 

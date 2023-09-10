@@ -280,12 +280,22 @@ func (dpe *DistributedGrepEngine) CreateJson(packagedString string, outputsJson 
 	return dataBytes, err
 }
 
-func DeserializeJson(dataBytes []byte) (string, []grep.GrepOutput) {
-	var jsonOutput JSONOutput
-	err := json.Unmarshal(dataBytes, &jsonOutput)
-
+func DeserializeJson(jsonFileName string) (string, []grep.GrepOutput) {
+	jsonFile, err := os.Open(jsonFileName)
 	if err != nil {
-		fmt.Println("Error in deserializing json file")
+		log.Fatalf("Failed to open json file")
+	}
+	defer func(jsonFile *os.File) {
+		_ = jsonFile.Close()
+	}(jsonFile)
+
+	dataBytes, _ := io.ReadAll(jsonFile)
+
+	var jsonOutput JSONOutput
+	err2 := json.Unmarshal(dataBytes, &jsonOutput)
+
+	if err2 != nil {
+		log.Fatalf("Error in deserializing json file")
 	}
 
 	return jsonOutput.Query, jsonOutput.Outputs
