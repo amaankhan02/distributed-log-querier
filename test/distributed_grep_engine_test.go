@@ -3,6 +3,7 @@ package test
 import (
 	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
+	"fmt"
 	"log"
 	"os/exec"
 	"strings"
@@ -83,7 +84,7 @@ func TestExecuteSmall(t *testing.T) {
 		t.Error("Expected query does not match")
 	}
 
-	for i, gOut := range grepOutputs {
-		// TODO: add this in later
+	for _, gOut := range grepOutputs {
+		fmt.Println(gOut.ToString())
 	}
 }
