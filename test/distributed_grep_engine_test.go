@@ -69,7 +69,7 @@ When this function is ran, we assume that the other VMs have already have their 
 the [r] keyword already pressed to indicate
 */
 func TestExecuteSmall(t *testing.T) {
-	cmdArgs := []string{"-n", "3", "-f", "vm1.log", "-t", "test/test_execute_data/actual/"}
+	cmdArgs := []string{"-n", "3", "-f", "vm1.log", "-t", "test_execute_data/actual/"}
 	cmd := exec.Command("./main", cmdArgs...)
 	cmd.Stdin = strings.NewReader("r\ngrep -c GET\nexit\n")
 	err := cmd.Run()
@@ -78,8 +78,8 @@ func TestExecuteSmall(t *testing.T) {
 	}
 
 	// read open the json file it outputted
-	actual_query, actual_gOut := distributed_engine.DeserializeJson("test/test_execute_data/actual/test1.json")
-	expec_query, expec_gOut := distributed_engine.DeserializeJson("test/test_execute_data/expected/test1_expected.json")
+	actual_query, actual_gOut := distributed_engine.DeserializeJson("test_execute_data/actual/test1.json")
+	expec_query, expec_gOut := distributed_engine.DeserializeJson("test_execute_data/expected/test1_expected.json")
 
 	if actual_query != expec_query {
 		t.Error("Query does not match")
