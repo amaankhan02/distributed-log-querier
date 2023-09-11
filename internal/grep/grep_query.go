@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -80,7 +81,7 @@ func (q *GrepQuery) Execute(filename string) *GrepOutput {
 
 	// make sure there were matches in doing this
 	if err != nil { // TODO: why do we have to make sure there were matches tho?
-		return &GrepOutput{Output: "", Filename: filename, NumLines: 0}
+		return &GrepOutput{Output: "", Filename: filepath.Base(filename), NumLines: 0}
 	}
 
 	outputStr := string(binaryOutput)
@@ -88,7 +89,7 @@ func (q *GrepQuery) Execute(filename string) *GrepOutput {
 	end := time.Now()
 	elapsedTime := end.Sub(start)
 
-	return &GrepOutput{outputStr, filename, numLines, elapsedTime}
+	return &GrepOutput{outputStr, filepath.Base(filename), numLines, elapsedTime}
 }
 
 // Parses the grep query user entered. Returns a slice containing the individual command arguments

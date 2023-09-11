@@ -3,7 +3,6 @@ package test
 import (
 	"cs425_mp1/internal/distributed_engine"
 	"cs425_mp1/internal/grep"
-	"fmt"
 	"log"
 	"os/exec"
 	"strings"
@@ -66,26 +65,70 @@ func TestCreatingJson(t *testing.T) {
 }
 
 /*
-When this function is ran, we assume that the other VMs have already have their programs running, with
-the [r] keyword already pressed to indicate
+Tests running one grep query with 3 VMs and seeing if the outputs are correct.
+Only tests one query since each query is independent of each other and don't have any effect
+on the correctness of the output, only the speed (due to caching)
+
+To run this test you need to make sure the following folders and expected files are setup correctly
+otherwise it will fail
+
+NOTE: When running this test case, it assumes you already have VM 2 and VM 3 booted up with the program running.
+This program must run on VM 1.
 */
-func TestExecuteSmall(t *testing.T) {
-	cmdArgs := []string{"-n", "3", "-f", "test_logs/test_log_file1.log", "-t"}
-	cmd := exec.Command("./main", cmdArgs...)
-	cmd.Stdin = strings.NewReader("r\ngrep -c ERROR\nexit\n")
+func TestExecute3VM(t *testing.T) {
+	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/"}
+	cmd := exec.Command("../main", cmdArgs...)
+	cmd.Stdin = strings.NewReader("grep -c GET\nexit\n")
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// read open the json file it outputted
-	query, grepOutputs := distributed_engine.DeserializeJson("test1.json")
+	actual_query, actual_gOut := distributed_engine.DeserializeJson("test_execute_data/actual/test1.json")
+	expec_query, expec_gOut := distributed_engine.DeserializeJson("test_execute_data/expected/test1_expected.json")
 
-	if query != "grep -c ERROR" {
-		t.Error("Expected query does not match")
+	if actual_query != expec_query {
+		t.Error("Query does not match")
+	}
+	if len(actual_gOut) != len(expec_gOut) {
+		t.Error("actual grep output is not same length as expected grep output")
+	}
+	for i := 0; i < len(actual_gOut); i++ {
+		if !grep.GrepOutputsAreEqual(&(actual_gOut[i]), &(expec_gOut[i])) {
+			t.Errorf("Grep Outputs [%d] are NOT equal", i)
+		}
+	}
+}
+
+/*
+Tests running the same query twice, and checking if the speed of the second query is faster than the speed of the first
+query's execution time, which essentially checks if it cached its results
+
+To run this test you need to make sure the following folders and expected files are setup correctly
+otherwise it will fail
+
+NOTE: When running this test case, it assumes you already have VM 2 and VM 3 booted up with the program running.
+This program must run on VM 1.
+*/
+func TestExecuteCaching(t *testing.T) {
+	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/"}
+	cmd := exec.Command("../main", cmdArgs...)
+	cmd.Stdin = strings.NewReader("grep -c GET\ngrep -c GET\nexit\n")
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	for _, gOut := range grepOutputs {
-		fmt.Println(gOut.ToString())
+	// read open the json file it outputted
+	_, actual_gOut1 := distributed_engine.DeserializeJson("test_execute_data/actual/test1.json")
+	_, actual_gOut2 := distributed_engine.DeserializeJson("test_execute_data/actual/test2.json")
+
+	// evaluate the execution time
+	for i := 0; i < len(actual_gOut1); i++ {
+		// we want gOut2 time to be less than gOut1 time. Otherwise, it's an error
+		if actual_gOut1[i].ExecutionTime < actual_gOut2[i].ExecutionTime {
+			t.Errorf("gOut1 Time (%d) >= gOut2 Time (%d)", actual_gOut1[i].ExecutionTime.Nanoseconds(), actual_gOut2[i].ExecutionTime.Nanoseconds())
+		}
 	}
 }

@@ -1,0 +1,23 @@
+{
+  "Query": "grep;-c;GET",
+  "Outputs": [
+    {
+      "Output": "170372\n",
+      "Filename": "vm1.log",
+      "NumLines": 1,
+      "ExecutionTime": 74806791
+    },
+    {
+      "Output": "160563\n",
+      "Filename": "vm2.log",
+      "NumLines": 1,
+      "ExecutionTime": 69430320
+    },
+    {
+      "Output": "161169\n",
+      "Filename": "vm3.log",
+      "NumLines": 1,
+      "ExecutionTime": 71646495
+    }
+  ]
+}
