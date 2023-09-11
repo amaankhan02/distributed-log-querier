@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -38,7 +37,7 @@ var testDir *string
 
 func ParseArguments() {
 	flagNumMachines = flag.Int("n", 10, "Number of Machines in the network in the range [2, 10]")
-	filename := flag.String("f", "", "Filename of the log file")
+	localLogFile = flag.String("f", "", "Filename of the log file")
 	cacheSize = flag.Int("c", 10, "Size of the in-memory LRU cache")
 	verbose = flag.Bool("v", false, "Indicates if you want messages to be printed out")
 	testDir = flag.String("t", "", "If you wish to run this program in TEST mode, put the directory you want your output JSON files to be stored")
@@ -46,11 +45,11 @@ func ParseArguments() {
 	flag.Parse()
 
 	// convert filename to a full path for the localLogFile variable
-	fullPath, err := filepath.Abs(*filename)
-	if err != nil {
-		log.Fatal("Invalid file - does not exist!")
-	}
-	localLogFile = &fullPath
+	//fullPath, err := filepath.Abs(*filename)
+	//if err != nil {
+	//	log.Fatal("Invalid file - does not exist!")
+	//}
+	//localLogFile = &fullPath
 
 	// convert inputFile to a full path for the
 	//if *_input_filename != "" {
