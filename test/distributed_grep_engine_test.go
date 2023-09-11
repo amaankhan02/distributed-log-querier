@@ -73,7 +73,7 @@ NOTE: When running this test case, it assumes you already have VM 2 and VM 3 boo
 This program must run on VM 1.
 */
 func TestExecute3VM(t *testing.T) {
-	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/"}
+	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/1/"}
 	cmd := exec.Command("../main", cmdArgs...)
 	cmd.Stdin = strings.NewReader("grep -c GET\nexit\n")
 	err := cmd.Run()
