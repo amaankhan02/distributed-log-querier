@@ -328,7 +328,7 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 
 	err := network.SendRequest(gquery_data, conn)
 	if err != nil {
-		fmt.Printf("Failed to send gquery_data to %s\n", conn.RemoteAddr()) // TODO: how to handle this error?!
+		fmt.Printf("Failed to send gquery_data to %s\n", conn.RemoteAddr())
 		return
 	}
 
@@ -336,7 +336,7 @@ func (dpe *DistributedGrepEngine) remoteExecute(gquery *grep.GrepQuery, conn net
 	reader := bufio.NewReader(conn)
 	byte_data, err2 := network.ReadRequest(reader)
 	if err2 != nil {
-		fmt.Printf("Failed to read gquery_data from %s\n", conn.RemoteAddr()) // TODO: how to handle this error?!
+		fmt.Printf("Failed to read gquery_data from %s\n", conn.RemoteAddr())
 		return
 	}
 
@@ -353,10 +353,10 @@ func (dpe *DistributedGrepEngine) localExecute(gquery *grep.GrepQuery, outputCha
 	outputChannel <- grepOutput
 }
 
-func (dpe *DistributedGrepEngine) Shutdown() {
-	dpe.StopServer()
-	// TODO: anything else needed here?
-}
+// Does not work currently so do not use
+//func (dpe *DistributedGrepEngine) Shutdown() {
+//	dpe.StopServer()
+//}
 
 func (dpe *DistributedGrepEngine) StopServer() {
 	if dpe.serverQuit != nil {

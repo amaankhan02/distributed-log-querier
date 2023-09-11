@@ -39,8 +39,6 @@ do that.
 
 Returns an error of io.EOF or io.ErrUnexpectedEOF
 */
-// TODO: change to use io.ReadFull() w/ bufio.Reader()
-// TODO: change to return and handle the error = io.EOF to know when we are done w/ the port to exit out? not sure...
 func ReadRequest(reader *bufio.Reader) ([]byte, error) {
 	data_size, err := readMessageSize(reader, MESSAGE_SIZE_BYTES)
 
