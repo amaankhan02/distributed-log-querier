@@ -256,6 +256,7 @@ func (dpe *DistributedGrepEngine) Execute(gquery *grep.GrepQuery) {
 
 	if dpe.testOutputFileNameFormat != "" {
 		_, err := dpe.CreateJson(gquery.PackagedString, outputsJson)
+		dpe.currentTestFileIdx += 1
 		if err != nil {
 			fmt.Println("Error in creating json file ")
 		}
@@ -278,7 +279,6 @@ func (dpe *DistributedGrepEngine) CreateJson(packagedString string, outputsJson 
 		fmt.Println("Error writing to file using json.Marshal")
 	}
 	filename := fmt.Sprintf(dpe.testOutputFileNameFormat, dpe.currentTestFileIdx)
-	dpe.currentTestFileIdx += 1
 	err = os.WriteFile(filename, dataBytes, os.FileMode(0644))
 	if err != nil {
 		fmt.Println("Error in Writing Creating Json file")
