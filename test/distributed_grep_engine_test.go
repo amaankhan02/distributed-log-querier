@@ -69,9 +69,9 @@ When this function is ran, we assume that the other VMs have already have their 
 the [r] keyword already pressed to indicate
 */
 func TestExecuteSmall(t *testing.T) {
-	cmdArgs := []string{"-n", "3", "-f", "vm1.log", "-t", "test_execute_data/actual/"}
-	cmd := exec.Command("./main", cmdArgs...)
-	cmd.Stdin = strings.NewReader("r\ngrep -c GET\nexit\n")
+	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/"}
+	cmd := exec.Command("../main", cmdArgs...)
+	cmd.Stdin = strings.NewReader("grep -c GET\nexit\n")
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
