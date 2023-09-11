@@ -73,7 +73,7 @@ NOTE: When running this test case, it assumes you already have VM 2 and VM 3 boo
 This program must run on VM 1.
 */
 func TestExecute3VM(t *testing.T) {
-	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/1/"}
+	cmdArgs := []string{"-n", "3", "-f", "../vm1.log", "-t", "test_execute_data/actual/"}
 	cmd := exec.Command("../main", cmdArgs...)
 	cmd.Stdin = strings.NewReader("grep -c GET\nexit\n")
 	err := cmd.Run()
@@ -82,8 +82,8 @@ func TestExecute3VM(t *testing.T) {
 	}
 
 	// read open the json file it outputted
-	actual_query, actual_gOut := distributed_engine.DeserializeJson("test_execute_data/actual/1/test1.json")
-	expec_query, expec_gOut := distributed_engine.DeserializeJson("test_execute_data/expected/1/test1_expected.json")
+	actual_query, actual_gOut := distributed_engine.DeserializeJson("test_execute_data/actual/test1.json")
+	expec_query, expec_gOut := distributed_engine.DeserializeJson("test_execute_data/expected/test1_expected.json")
 
 	if actual_query != expec_query {
 		t.Error("Query does not match")
