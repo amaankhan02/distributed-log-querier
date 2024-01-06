@@ -1,11 +1,13 @@
-# cs425_mp1
+# Distributed Log Querier
+
+This program allows you to query distributed log files on multiple machines, from any one of those machines that are running the program. From any running machine, you can run a grep query that runs on all the log files across all machines and prints output to your terminal (with the appropriate line counts, i.e., number of matching lines, and file names to designate where each log entry line came from). The distributed log querier also caches outputs of grep queries so that repeated grep queries are executed much faster.
 
 ## Build Instruction
-* Program is written in Go, so make sure you have go installed
+* Install Go with at least version `1.19`
 * Once installed, from the root directory of this project, run `go build cmd/main.go`
 which will create an executable `./main` on Linux/Unix systems, or `main.exe` on Windows
 
-## Instructions to run `./main` / `main.exe`
+## Instructions to run `./main`
 * `./main` takes the following arguments
   * `-n` (number of total machines in network to use)
     * **type**: int
